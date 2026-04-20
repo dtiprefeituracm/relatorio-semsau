@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Relatório SEMSAU - Costa Marques</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #0f1a1a; color: #e0e0e0; display: flex; height: 100vh; overflow: hidden; }
+#sidebar { width: 350px; min-width: 350px; background: #162020; border-right: 1px solid #2a4040; display: flex; flex-direction: column; overflow-y: auto; padding: 14px; gap: 10px; }
+#preview { flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+h1 { font-size: 15px; color: #4acaca; font-weight: bold; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tab { background: #0f1e1e; border: 1px solid #2a4040; color: #80b0b0; border-radius: 6px 6px 0 0; padding: 5px 10px; font-size: 11px; cursor: pointer; white-space: nowrap; }
+.tab.active { background: #1a3030; border-color: #4acaca; color: #4acaca; font-weight: bold; }
+.tab:hover:not(.active) { background: #1a2a2a; }
+.tab-add { background: none; border: 1px dashed #2a6060; color: #4a9090; border-radius: 6px 6px 0 0; padding: 5px 10px; font-size: 11px; cursor: pointer; }
+.tab-add:hover { border-color: #4acaca; color: #4acaca; }
+.card { background: #1a2a2a; border: 1px solid #2a4040; border-radius: 8px; padding: 12px; }
+label { display: block; font-size: 10px; color: #80b0b0; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; margin-top: 10px; }
+label:first-child { margin-top: 0; }
+input[type=text], input[type=number] { width: 100%; background: #0f1e1e; border: 1px solid #2a5050; color: #e0e0e0; padding: 7px 10px; border-radius: 5px; font-size: 13px; outline: none; }
+input[type=text]:focus, input[type=number]:focus { border-color: #4acaca; }
+.import-box { background: #1a2a2a; border: 1px dashed #2a6060; border-radius: 8px; padding: 10px; }
+.import-title { color: #4acaca; font-size: 12px; font-weight: bold; margin-bottom: 5px; }
+.import-hint { color: #80a0a0; font-size: 11px; margin-bottom: 6px; }
+.import-hint strong { color: #a0c0c0; }
+input[type=file] { color: #80b0b0; font-size: 12px; width: 100%; }
+.logo-box { background: #1a2a2a; border: 1px solid #2a4040; border-radius: 8px; padding: 10px; }
+.logo-box-title { color: #4acaca; font-size: 12px; font-weight: bold; margin-bottom: 8px; }
+.logo-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.logo-row label { margin: 0; flex-shrink: 0; width: 80px; font-size: 10px; }
+.logo-row input[type=file] { flex: 1; }
+.logo-dot { width: 8px; height: 8px; border-radius: 50%; background: #444; flex-shrink: 0; }
+.logo-dot.ok { background: #4aca4a; }
+.prof-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.prof-title { color: #4acaca; font-size: 13px; font-weight: bold; }
+.btn-add { background: #2a7070; color: white; border: none; border-radius: 5px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+.btn-add:hover { background: #3a9090; }
+.prof-list { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; padding-right: 2px; }
+.prof-item { background: #0f1a1a; border: 1px solid #253535; border-radius: 7px; padding: 7px; }
+.prof-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.prof-num { font-size: 10px; color: #80b0b0; }
+.btn-del { background: none; color: #c06060; border: 1px solid #603030; border-radius: 4px; padding: 1px 6px; cursor: pointer; font-size: 11px; }
+.prof-item input { width: 100%; margin-bottom: 3px; }
+.total-box { background: #1a3030; border: 1px solid #2a6060; border-radius: 8px; padding: 8px; text-align: center; margin-top: 8px; }
+.total-label { color: #80b0b0; font-size: 10px; }
+.total-num { color: #4acaca; font-size: 26px; font-weight: bold; line-height: 1.1; }
+.export-row { display: flex; gap: 8px; }
+.btn-export { flex: 1; background: #d4860a; color: #000; border: none; border-radius: 8px; padding: 10px 6px; font-size: 12px; font-weight: bold; cursor: pointer; text-align: center; line-height: 1.4; }
+.btn-export:hover { background: #e8960a; }
+.btn-export.insta { background: #7030a0; color: #fff; }
+.btn-export.insta:hover { background: #8a3aba; }
+.btn-csv { width: 100%; background: #163030; color: #4acaca; border: 1px solid #2a6060; border-radius: 8px; padding: 8px; font-size: 12px; cursor: pointer; }
+.btn-csv:hover { background: #1a4040; }
+.btn-del-unit { background: none; border: 1px solid #603030; color: #c06060; border-radius: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer; }
+.msg { font-size: 12px; color: #4aca4a; text-align: center; height: 16px; }
+.preview-title { font-size: 11px; color: #80b0b0; text-transform: uppercase; letter-spacing: 0.5px; align-self: flex-start; }
+#canvas { max-width: 100%; border-radius: 10px; border: 1px solid #2a4040; display: block; }
+.btn-row { display: flex; gap: 4px; }
+.btn-mv { background: none; color: #80b0b0; border: 1px solid #2a4040; border-radius: 4px; padding: 1px 5px; cursor: pointer; font-size: 11px; }
+.btn-mv:hover { background: #1a3030; }
+.unit-row { display: flex; align-items: flex-end; gap: 6px; }
+.unit-row > div { flex: 1; }
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <h1>Gerador de Relatório SEMSAU</h1>
+
+  <!-- Logos -->
+  <div class="logo-box">
+    <div class="logo-box-title">Logos (selecione uma vez — fica salvo)</div>
+    <div class="logo-row">
+      <label>SEMSAU</label>
+      <input type="file" id="logoSemsauFile" accept=".png,.jpg,.jpeg,.svg">
+      <span class="logo-dot" id="dotSemsau"></span>
+    </div>
+    <div class="logo-row">
+      <label>Gestão / Pref.</label>
+      <input type="file" id="logoPrefFile" accept=".png,.jpg,.jpeg,.svg">
+      <span class="logo-dot" id="dotPref"></span>
+    </div>
+  </div>
+
+  <!-- Abas -->
+  <div><div class="tabs" id="tabBar"></div></div>
+
+  <!-- Campos da unidade -->
+  <div class="card">
+    <div class="unit-row">
+      <div>
+        <label>Unidade de Saúde</label>
+        <input type="text" id="unidade" oninput="saveAndDraw()">
+      </div>
+      <button class="btn-del-unit" onclick="deleteUnit()">&#x2715; Excluir</button>
+    </div>
+    <label>Período</label>
+    <input type="text" id="periodo" oninput="saveAndDraw()">
+    <label>Município</label>
+    <input type="text" id="cidade" oninput="saveAndDraw()">
+  </div>
+
+  <!-- Importar -->
+  <div class="import-box">
+    <div class="import-title">Importar planilha (.xlsx / .csv)</div>
+    <div class="import-hint">Colunas: <strong>Nome</strong> | <strong>Especialidade</strong> | <strong>Atendimentos</strong></div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+  </div>
+
+  <!-- Profissionais -->
+  <div class="card">
+    <div class="prof-header">
+      <span class="prof-title" id="profCount">Profissionais</span>
+      <button class="btn-add" onclick="addProf()">+ Adicionar</button>
+    </div>
+    <div class="prof-list" id="profList"></div>
+    <div class="total-box">
+      <div class="total-label">Total geral</div>
+      <div class="total-num" id="totalNum">0</div>
+      <div class="total-label">atendimentos</div>
+    </div>
+  </div>
+
+  <!-- Exportar -->
+  <div class="export-row">
+    <button class="btn-export" onclick="exportPNG('normal')">&#11015; PNG Post</button>
+    <button class="btn-export insta" onclick="exportPNG('insta')">&#11015; Instagram<br><small style="font-weight:normal;font-size:10px">1080 x 1080</small></button>
+  </div>
+  <button class="btn-csv" onclick="downloadCSV()">&#11015; Baixar modelo CSV</button>
+  <div class="msg" id="msg"></div>
+</div>
+
+<div id="preview">
+  <div class="preview-title">Preview ao vivo</div>
+  <canvas id="canvas"></canvas>
+</div>
+
+<script>
+// ── Logos via FileReader (sem taint de canvas) ─────────────────
+var imgSemsau = new Image();
+var imgPref   = new Image();
+var logoSemsauOk = false;
+var logoPrefOk   = false;
+
+function loadLogoFromStorage(){
+  var s = localStorage.getItem("logo_semsau");
+  var p = localStorage.getItem("logo_pref");
+  if(s){ imgSemsau.src = s; imgSemsau.onload = function(){ logoSemsauOk=true; document.getElementById("dotSemsau").className="logo-dot ok"; draw(); }; }
+  if(p){ imgPref.src   = p; imgPref.onload   = function(){ logoPrefOk=true;   document.getElementById("dotPref").className="logo-dot ok";   draw(); }; }
+}
+
+function setupLogoInput(inputId, storageKey, imgObj, dotId, flagSetter){
+  document.getElementById(inputId).addEventListener("change", function(e){
+    var f = e.target.files[0]; if(!f) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      var dataUrl = ev.target.result;
+      try{ localStorage.setItem(storageKey, dataUrl); }catch(e2){}
+      imgObj.onload = function(){ flagSetter(true); document.getElementById(dotId).className="logo-dot ok"; draw(); };
+      imgObj.src = dataUrl;
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+setupLogoInput("logoSemsauFile","logo_semsau",imgSemsau,"dotSemsau",function(v){logoSemsauOk=v;});
+setupLogoInput("logoPrefFile",  "logo_pref",  imgPref,  "dotPref",  function(v){logoPrefOk=v;});
+
+// ── Dados padrão ──────────────────────────────────────────────
+var DEFAULT_UNITS = [
+  {id:"ubs", nome:"UBS ANESTINO DE ALMEIDA", periodo:"17 E 18 DE ABRIL", cidade:"Costa Marques - RO", profs:[
+    {nome:"Dr. Alexandre",                    esp:"Clínico Geral",                                  qtd:17},
+    {nome:"Dra. Natália e Jefferson Miranda", esp:"Passe Livre / Ação Mobilidade e Serviço Social", qtd:75},
+    {nome:"Dr. Pagoto",                       esp:"Programa Emagreça São Francisco",                qtd:13},
+    {nome:"Daniele Piveta",                   esp:"Nutricionista",                                   qtd:6},
+    {nome:"Érica Batista",                    esp:"Atendimento Ambulatorial",                        qtd:144},
+    {nome:"Jean",                             esp:"Fonoaudiólogo",                                   qtd:8},
+    {nome:"Atendimento com Psicólogos",       esp:"Psicologia",                                      qtd:33},
+    {nome:"Dra. Raphaella Krisley",           esp:"Ginecologista",                                   qtd:33}
+  ]},
+  {id:"hospital", nome:"HOSPITAL MUNICIPAL", periodo:"ABRIL 2026", cidade:"Costa Marques - RO", profs:[
+    {nome:"Assistente Social",              esp:"Serviço Social",          qtd:0},
+    {nome:"Neuropsicólogo",                 esp:"Neuropsicologia",         qtd:0},
+    {nome:"Fisioterapeuta",                 esp:"Fisioterapia",            qtd:0},
+    {nome:"Ultrassom",                      esp:"Diagnóstico por Imagem",  qtd:0},
+    {nome:"Pediatra",                       esp:"Pediatria",               qtd:0},
+    {nome:"Atendimento de Enfermagem",      esp:"Enfermagem",              qtd:0},
+    {nome:"Encaminhados para Cacoal",       esp:"Referência Externa",      qtd:0},
+    {nome:"Encaminhados para Ji-Paraná",    esp:"Referência Externa",      qtd:0},
+    {nome:"Encaminhados para Porto Velho",  esp:"Referência Externa",      qtd:0}
+  ]}
+];
+
+var units = [], activeIdx = 0;
+
+function loadState(){
+  try{ var s=localStorage.getItem("semsau_units"); units=s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULT_UNITS)); }
+  catch(e){ units=JSON.parse(JSON.stringify(DEFAULT_UNITS)); }
+  try{ var ai=parseInt(localStorage.getItem("semsau_active")||"0"); activeIdx=ai<units.length?ai:0; }
+  catch(e){ activeIdx=0; }
+}
+function saveState(){
+  try{ localStorage.setItem("semsau_units",JSON.stringify(units)); localStorage.setItem("semsau_active",String(activeIdx)); }catch(e){}
+}
+function saveAndDraw(){
+  if(!units[activeIdx]) return;
+  units[activeIdx].nome    = document.getElementById("unidade").value;
+  units[activeIdx].periodo = document.getElementById("periodo").value;
+  units[activeIdx].cidade  = document.getElementById("cidade").value;
+  saveState(); draw();
+}
+
+// ── Abas ──────────────────────────────────────────────────────
+function renderTabs(){
+  var bar=document.getElementById("tabBar"); bar.innerHTML="";
+  units.forEach(function(u,i){
+    var t=document.createElement("button");
+    t.className="tab"+(i===activeIdx?" active":"");
+    t.textContent=u.nome.length>20?u.nome.substring(0,20)+"…":u.nome;
+    t.onclick=(function(idx){return function(){activeIdx=idx;saveState();renderAll();};})(i);
+    bar.appendChild(t);
+  });
+  var a=document.createElement("button"); a.className="tab-add"; a.textContent="+ Unidade"; a.onclick=addUnit; bar.appendChild(a);
+}
+function addUnit(){
+  var n=prompt("Nome da nova unidade:","NOVA UNIDADE"); if(!n) return;
+  units.push({id:"u"+Date.now(),nome:n.toUpperCase(),periodo:"",cidade:"Costa Marques - RO",profs:[]});
+  activeIdx=units.length-1; saveState(); renderAll();
+}
+function deleteUnit(){
+  if(units.length<=1){showMsg("Precisa ter ao menos uma unidade."); return;}
+  if(!confirm("Excluir \""+units[activeIdx].nome+"\"?")) return;
+  units.splice(activeIdx,1); activeIdx=Math.min(activeIdx,units.length-1); saveState(); renderAll();
+}
+
+// ── Lista de profissionais ────────────────────────────────────
+function renderList(){
+  var u=units[activeIdx]; if(!u) return;
+  document.getElementById("unidade").value = u.nome||"";
+  document.getElementById("periodo").value = u.periodo||"";
+  document.getElementById("cidade").value  = u.cidade||"Costa Marques - RO";
+  var list=document.getElementById("profList"); list.innerHTML="";
+  var profs=u.profs;
+  profs.forEach(function(p,i){
+    var d=document.createElement("div"); d.className="prof-item";
+    d.innerHTML=
+      '<div class="prof-item-header"><div class="btn-row">'+
+      '<button class="btn-mv" onclick="mv('+i+',-1)"'+(i===0?' disabled':'')+'>&#8593;</button>'+
+      '<button class="btn-mv" onclick="mv('+i+',1)"'+(i===profs.length-1?' disabled':'')+'>&#8595;</button>'+
+      '<span class="prof-num">#'+(i+1)+'</span></div>'+
+      '<button class="btn-del" onclick="removeProf('+i+')">&#x2715;</button></div>'+
+      '<input type="text" value="'+esc(p.nome)+'" placeholder="Nome" oninput="setProf('+i+',\'nome\',this.value)">'+
+      '<input type="text" value="'+esc(p.esp)+'" placeholder="Especialidade" oninput="setProf('+i+',\'esp\',this.value)" style="color:#ffd06a">'+
+      '<input type="number" value="'+p.qtd+'" min="0" placeholder="Atendimentos" oninput="setProf('+i+',\'qtd\',parseInt(this.value)||0)">';
+    list.appendChild(d);
+  });
+  document.getElementById("profCount").textContent="Profissionais ("+profs.length+")";
+  updateTotal();
+}
+function esc(s){ return String(s||"").replace(/"/g,"&quot;"); }
+function setProf(i,f,v){ units[activeIdx].profs[i][f]=v; updateTotal(); saveState(); draw(); }
+function updateTotal(){ var t=(units[activeIdx].profs||[]).reduce(function(s,p){return s+(parseInt(p.qtd)||0);},0); document.getElementById("totalNum").textContent=t; }
+function addProf(){ units[activeIdx].profs.push({nome:"Novo Profissional",esp:"Especialidade",qtd:0}); saveState(); renderList(); draw(); }
+function removeProf(i){ units[activeIdx].profs.splice(i,1); saveState(); renderList(); draw(); }
+function mv(i,dir){ var p=units[activeIdx].profs,j=i+dir; if(j<0||j>=p.length)return; var t=p[i];p[i]=p[j];p[j]=t; saveState(); renderList(); draw(); }
+function renderAll(){ renderTabs(); renderList(); draw(); }
+
+// ── Importar arquivo ─────────────────────────────────────────
+document.getElementById("fileInput").addEventListener("change",function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var reader=new FileReader();
+  if(f.name.toLowerCase().endsWith(".csv")){
+    reader.onload=function(ev){
+      var lines=ev.target.result.split(/\r?\n/).slice(1);
+      var parsed=lines.filter(function(l){return l.trim();}).map(function(l){
+        var p=l.split(","); return{nome:(p[0]||"").trim(),esp:(p[1]||"").trim(),qtd:parseInt(p[2])||0};
+      }).filter(function(p){return p.nome;});
+      if(parsed.length){units[activeIdx].profs=parsed;saveState();renderList();draw();showMsg(parsed.length+" registros importados");}
+    };
+    reader.readAsText(f,"UTF-8");
+  } else {
+    reader.onload=function(ev){
+      try{
+        var wb=XLSX.read(ev.target.result,{type:"binary"});
+        var ws=wb.Sheets[wb.SheetNames[0]];
+        var rows=XLSX.utils.sheet_to_json(ws,{header:1});
+        var parsed=rows.slice(1).filter(function(r){return r[0];}).map(function(r){return{nome:String(r[0]||""),esp:String(r[1]||""),qtd:parseInt(r[2])||0};});
+        if(parsed.length){units[activeIdx].profs=parsed;saveState();renderList();draw();showMsg(parsed.length+" registros importados");}
+      }catch(err){showMsg("Erro ao ler planilha");}
+    };
+    reader.readAsBinaryString(f);
+  }
+  e.target.value="";
+});
+
+// ── Download modelo CSV ───────────────────────────────────────
+function downloadCSV(){
+  var rows=["Nome,Especialidade,Atendimentos","Dr. Alexandre,Clínico Geral,17","Dra. Natália e Jefferson Miranda,Passe Livre / Ação Mobilidade e Serviço Social,75","Dr. Pagoto,Programa Emagreça São Francisco,13","Daniele Piveta,Nutricionista,6","Érica Batista,Atendimento Ambulatorial,144","Jean,Fonoaudiólogo,8","Atendimento com Psicólogos,Psicologia,33","Dra. Raphaella Krisley,Ginecologista,33"];
+  var blob=new Blob([rows.join("\n")],{type:"text/csv;charset=utf-8;"});
+  var link=document.createElement("a"); link.href=URL.createObjectURL(blob); link.download="modelo-importacao-semsau.csv"; link.click();
+  showMsg("Modelo CSV baixado!");
+}
+
+function showMsg(m){ var el=document.getElementById("msg"); el.textContent=m; setTimeout(function(){el.textContent="";},3000); }
+
+// ── Canvas ────────────────────────────────────────────────────
+function rr(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function trunc(ctx,text,maxW){ if(ctx.measureText(text).width<=maxW) return text; var t=text; while(t.length>0&&ctx.measureText(t+"…").width>maxW) t=t.slice(0,-1); return t+"…"; }
+
+function drawPoster(ctx, W, profs, unidade, periodo){
+  var ROW_H=82, FOOTER_H=112, sc=W/800;
+  var H = 280*sc + profs.length*ROW_H*sc + FOOTER_H*sc;
+  ctx.canvas.width=W; ctx.canvas.height=H;
+
+  // Fundo
+  var bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,"#1a6060"); bg.addColorStop(0.55,"#206a6a"); bg.addColorStop(1,"#0a2848");
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle="rgba(255,255,255,0.03)"; ctx.lineWidth=1;
+  for(var gx=0;gx<W;gx+=35*sc){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
+  for(var gy=0;gy<H;gy+=35*sc){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
+
+  var cx=W/2, y=52*sc;
+
+  // Título
+  ctx.fillStyle="#ffffff"; ctx.font="bold "+(41*sc)+"px Arial Black,Arial,sans-serif";
+  ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("RELATÓRIO DE ATENDIMENTOS",cx,y); y+=58*sc;
+
+  // Caixa unidade
+  ctx.fillStyle="rgba(26,110,110,0.92)"; rr(ctx,48*sc,y-22*sc,W-96*sc,52*sc,8*sc); ctx.fill();
+  ctx.strokeStyle="rgba(255,255,255,0.22)"; ctx.lineWidth=1; rr(ctx,48*sc,y-22*sc,W-96*sc,52*sc,8*sc); ctx.stroke();
+  ctx.fillStyle="#ffffff"; ctx.font="bold "+(26*sc)+"px Arial,sans-serif";
+  ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(unidade,cx,y+4*sc); y+=68*sc;
+
+  // Período
+  ctx.fillStyle="#e8a010"; ctx.font="bold "+(36*sc)+"px Arial Black,Arial,sans-serif";
+  ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(periodo,cx,y); y+=52*sc;
+
+  // Separador
+  ctx.strokeStyle="rgba(255,255,255,0.1)"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(50*sc,y); ctx.lineTo(W-50*sc,y); ctx.stroke(); y+=14*sc;
+
+  // Linhas profissionais
+  for(var i=0;i<profs.length;i++){
+    var p=profs[i], ry=y+i*ROW_H*sc, rh=(ROW_H-10)*sc, px=38*sc;
+    ctx.fillStyle=i%2===0?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)"; rr(ctx,px,ry,W-px*2,rh,8*sc); ctx.fill();
+    ctx.fillStyle="#e8a010"; ctx.fillRect(px+sc,ry+8*sc,4*sc,rh-16*sc);
+    ctx.fillStyle="#e8a010"; ctx.font="bold "+(30*sc)+"px Arial"; ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.fillText("›",px+12*sc,ry+rh/2);
+    var nmW=W-px*2-55*sc-95*sc;
+    ctx.fillStyle="#ffffff"; ctx.font="bold "+(18*sc)+"px Arial,sans-serif"; ctx.textAlign="left"; ctx.textBaseline="top"; ctx.fillText(trunc(ctx,p.nome,nmW),px+48*sc,ry+7*sc);
+    ctx.fillStyle="#ffd06a"; ctx.font="italic "+(13*sc)+"px Arial,sans-serif"; ctx.fillText(trunc(ctx,"("+p.esp+")",nmW+40*sc),px+48*sc,ry+30*sc);
+    ctx.fillStyle="#ffffff"; ctx.font="bold "+(44*sc)+"px Arial Black,Arial,sans-serif"; ctx.textAlign="right"; ctx.textBaseline="middle"; ctx.fillText(String(p.qtd).padStart(2,"0"),W-px-10*sc,ry+rh/2);
+  }
+
+  // ── RODAPÉ ─────────────────────────────────────────────────
+  var fy=y+profs.length*ROW_H*sc+14*sc;
+  var grad=ctx.createRadialGradient(cx,fy+56*sc,10,cx,fy+56*sc,W*0.65);
+  grad.addColorStop(0,"#0164e5"); grad.addColorStop(0.45,"#0052c2"); grad.addColorStop(0.75,"#01307e"); grad.addColorStop(1,"#00276a");
+  ctx.fillStyle=grad; ctx.fillRect(0,fy,W,H-fy);
+
+  var total=profs.reduce(function(s,pp){return s+(parseInt(pp.qtd)||0);},0);
+
+  // Logos (só se carregados via FileReader — sem taint)
+  var lh=76*sc, ly=fy+8*sc;
+  if(logoSemsauOk && imgSemsau.naturalWidth){ var rL=imgSemsau.naturalWidth/imgSemsau.naturalHeight; ctx.drawImage(imgSemsau,W*0.17-lh*rL/2,ly,lh*rL,lh); }
+  if(logoPrefOk   && imgPref.naturalWidth)  { var rR=imgPref.naturalWidth/imgPref.naturalHeight;     ctx.drawImage(imgPref,  W*0.83-lh*rR/2,ly,lh*rR,lh); }
+
+  // Badge total centralizada
+  var bW=240*sc, bH=32*sc, bX=cx-bW/2, bY=fy+20*sc;
+  ctx.fillStyle="#e8a010"; rr(ctx,bX,bY,bW,bH,8*sc); ctx.fill();
+  ctx.fillStyle="#000000"; ctx.font="bold "+(15*sc)+"px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText("TOTAL GERAL: "+total+" atendimentos",cx,bY+bH/2);
+
+  // Slogan
+  ctx.fillStyle="#f0d060"; ctx.font="bold "+(11*sc)+"px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText("TRANSPARÊNCIA E RESPONSABILIDADE",cx,bY+bH+12*sc);
+
+  return H;
+}
+
+function draw(){
+  var u=units[activeIdx]; if(!u) return;
+  var ctx=document.getElementById("canvas").getContext("2d");
+  drawPoster(ctx,800,u.profs,u.nome.toUpperCase(),u.periodo.toUpperCase());
+}
+
+// ── Exportar ─────────────────────────────────────────────────
+function exportPNG(mode){
+  var u=units[activeIdx]; if(!u) return;
+  var nome=u.nome.replace(/\s+/g,"-").toLowerCase();
+
+  if(mode==="normal"){
+    // Gera em canvas limpo
+    var c=document.createElement("canvas"), ctx=c.getContext("2d");
+    drawPoster(ctx,800,u.profs,u.nome.toUpperCase(),u.periodo.toUpperCase());
+    var link=document.createElement("a");
+    link.download="relatorio-"+nome+".png";
+    link.href=c.toDataURL("image/png");
+    link.click();
+    showMsg("PNG exportado!");
+    return;
+  }
+
+  // Instagram 1080x1080
+  var sq=document.createElement("canvas"); sq.width=1080; sq.height=1080;
+  var sqCtx=sq.getContext("2d");
+  sqCtx.fillStyle="#001040"; sqCtx.fillRect(0,0,1080,1080);
+
+  var tmp=document.createElement("canvas"), tmpCtx=tmp.getContext("2d");
+  var pH=drawPoster(tmpCtx,1080,u.profs,u.nome.toUpperCase(),u.periodo.toUpperCase());
+  var sc=Math.min(1080/1080, 1080/pH);
+  sqCtx.drawImage(tmp,(1080-1080*sc)/2,(1080-pH*sc)/2,1080*sc,pH*sc);
+
+  var link=document.createElement("a");
+  link.download="relatorio-"+nome+"-instagram.png";
+  link.href=sq.toDataURL("image/png");
+  link.click();
+  showMsg("Instagram 1080x1080 exportado!");
+}
+
+// ── Init ─────────────────────────────────────────────────────
+loadState();
+loadLogoFromStorage();
+renderAll();
+</script>
+</body>
+</html>

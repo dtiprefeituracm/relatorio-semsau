@@ -205,9 +205,9 @@ function buildPeriodo(){
 }
 
 // ── Logos automáticos ─────────────────────────────────────────
-var imgSemsau=new Image(), imgPref=new Image();
-imgSemsau.crossOrigin="anonymous"; imgPref.crossOrigin="anonymous";
-var logoSemsauOk=false, logoPrefOk=false;
+var imgSemsau=new Image(), imgPref=new Image(), imgMid=new Image();
+imgSemsau.crossOrigin="anonymous"; imgPref.crossOrigin="anonymous"; imgMid.crossOrigin="anonymous";
+var logoSemsauOk=false, logoPrefOk=false, logoMidOk=false;
 function loadLogos(){
   // base URL — garante barra no final
   var href=window.location.href;
@@ -233,6 +233,11 @@ function loadLogos(){
     img2.src=base+"gestao.png"+ts;
   };
   imgPref.src=base+"gestao.png"+ts;
+
+  imgMid.crossOrigin="anonymous";
+  imgMid.onload=function(){logoMidOk=true;draw();};
+  imgMid.onerror=function(){logoMidOk=false;};
+  imgMid.src=base+"semsau02.png"+ts;
 }
 
 
@@ -378,7 +383,8 @@ function drawPoster(ctx,W,profs,unidade,periodo){
   var ROWS_H=profs.length*ROW_H;
   var TOTAL_AREA=190*sc;
   var FOOTER_H=100*sc;
-  var H=HEADER_H+TOTAL_AREA+ROWS_H+FOOTER_H;
+  var MID_LOGO_H=110*sc;
+  var H=HEADER_H+TOTAL_AREA+ROWS_H+MID_LOGO_H+FOOTER_H;
   ctx.canvas.width=W; ctx.canvas.height=H;
   var cx=W/2;
   var total=profs.reduce(function(s,p){return s+(parseInt(p.qtd)||0);},0);
@@ -518,8 +524,29 @@ function drawPoster(ctx,W,profs,unidade,periodo){
     ctx.fillText(String(qtd).padStart(2,"0"),W-12*sc,ry+rh/2);
   });
 
+  // ── LOGO CENTRAL (semsau02) ─────────────────────────────────
+  var midY=rowY+ROWS_H;
+
+  // Separador dourado antes da logo
+  var lgMid=ctx.createLinearGradient(40*sc,0,W-40*sc,0);
+  lgMid.addColorStop(0,"rgba(232,160,16,0)");lgMid.addColorStop(0.5,"#e8a010");lgMid.addColorStop(1,"rgba(232,160,16,0)");
+  ctx.fillStyle=lgMid; ctx.fillRect(40*sc,midY+8*sc,(W-80*sc),1.5*sc);
+
+  if(logoMidOk && imgMid.naturalWidth){
+    var mH=88*sc;
+    var mR=imgMid.naturalWidth/imgMid.naturalHeight;
+    var mW=mH*mR;
+    // Usar 'screen' blending para tornar o fundo preto transparente
+    ctx.globalCompositeOperation="screen";
+    ctx.drawImage(imgMid, cx-mW/2, midY+MID_LOGO_H/2-mH/2, mW, mH);
+    ctx.globalCompositeOperation="source-over";
+  }
+
+  // Separador dourado depois da logo
+  ctx.fillStyle=lgMid; ctx.fillRect(40*sc,midY+MID_LOGO_H-8*sc,(W-80*sc),1.5*sc);
+
   // ── RODAPÉ COM ONDA ──────────────────────────────────────────
-  var fy=rowY+ROWS_H;
+  var fy=midY+MID_LOGO_H;
   var waveH=20*sc;
 
   // Gradiente rodapé

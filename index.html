@@ -219,13 +219,30 @@ var imgSemsau=new Image(), imgPref=new Image();
 imgSemsau.crossOrigin="anonymous"; imgPref.crossOrigin="anonymous";
 var logoSemsauOk=false, logoPrefOk=false;
 function loadLogos(){
-  var base=window.location.href.replace(/\/[^/]*$/,"/");
+  // base URL — garante barra no final
+  var href=window.location.href;
+  var base=href.endsWith("/")?href:href.replace(/\/[^/]*$/,"/");
+  var ts="?v="+Date.now(); // cache-bust
+
+  // crossOrigin DEVE ser definido antes do src
+  imgSemsau.crossOrigin="anonymous";
   imgSemsau.onload=function(){logoSemsauOk=true;draw();};
-  imgSemsau.onerror=function(){logoSemsauOk=false;};
-  imgSemsau.src=base+"semsau.png";
+  imgSemsau.onerror=function(){
+    // Tenta sem crossOrigin como fallback (perde exportação mas mostra preview)
+    var img2=new Image();
+    img2.onload=function(){imgSemsau=img2;logoSemsauOk=true;draw();};
+    img2.src=base+"semsau.png"+ts;
+  };
+  imgSemsau.src=base+"semsau.png"+ts;
+
+  imgPref.crossOrigin="anonymous";
   imgPref.onload=function(){logoPrefOk=true;draw();};
-  imgPref.onerror=function(){logoPrefOk=false;};
-  imgPref.src=base+"gestao.png";
+  imgPref.onerror=function(){
+    var img2=new Image();
+    img2.onload=function(){imgPref=img2;logoPrefOk=true;draw();};
+    img2.src=base+"gestao.png"+ts;
+  };
+  imgPref.src=base+"gestao.png"+ts;
 }
 
 // ── Foto por unidade ─────────────────────────────────────────
@@ -393,161 +410,151 @@ function trunc(ctx,text,maxW){if(ctx.measureText(text).width<=maxW)return text;v
 // ── Desenhar cartaz ───────────────────────────────────────────
 function drawPoster(ctx,W,profs,unidade,periodo,photoImg){
   var sc=W/800;
-  var HEADER_H = 200*sc;    // topo verde com título
-  var ROW_H    = 80*sc;     // altura de cada linha
-  var ROWS_H   = profs.length*ROW_H;
-  var FOOTER_H = 130*sc;    // rodapé azul com onda
-  var H = HEADER_H + ROWS_H + FOOTER_H;
+  var HEADER_H=200*sc;
+  var ROW_H=58*sc;
+  var ROWS_H=profs.length*ROW_H;
+  var TOTAL_AREA=190*sc;
+  var FOOTER_H=100*sc;
+  var H=HEADER_H+TOTAL_AREA+ROWS_H+FOOTER_H;
   ctx.canvas.width=W; ctx.canvas.height=H;
   var cx=W/2;
+  var total=profs.reduce(function(s,p){return s+(parseInt(p.qtd)||0);},0);
 
-  // ══════════════════════════════════════════════════════════════
-  // 1. TOPO — gradiente verde-teal sólido
-  // ══════════════════════════════════════════════════════════════
-  var hg=ctx.createLinearGradient(0,0,W,HEADER_H);
-  hg.addColorStop(0,"#1a6060"); hg.addColorStop(0.5,"#1d7070"); hg.addColorStop(1,"#0d4848");
-  ctx.fillStyle=hg; ctx.fillRect(0,0,W,HEADER_H);
+  // ── FUNDO GRADIENTE DIAGONAL ────────────────────────────────
+  var dg=ctx.createLinearGradient(0,0,W,H);
+  dg.addColorStop(0,"#0a3a3a");
+  dg.addColorStop(0.4,"#063060");
+  dg.addColorStop(1,"#020e28");
+  ctx.fillStyle=dg; ctx.fillRect(0,0,W,H);
 
-  // Grid sutil no topo
-  ctx.strokeStyle="rgba(255,255,255,0.04)"; ctx.lineWidth=1;
-  for(var gx=0;gx<W;gx+=40*sc){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,HEADER_H);ctx.stroke();}
-  for(var gy=0;gy<HEADER_H;gy+=40*sc){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
+  // Linhas diagonais decorativas
+  ctx.strokeStyle="rgba(74,202,202,0.05)"; ctx.lineWidth=1*sc;
+  for(var d=-H;d<W+H;d+=35*sc){
+    ctx.beginPath();ctx.moveTo(d,0);ctx.lineTo(d+H,H);ctx.stroke();
+  }
 
-  // Círculos decorativos
-  ctx.fillStyle="rgba(255,255,255,0.04)";
-  ctx.beginPath();ctx.arc(W*0.88,HEADER_H*0.25,90*sc,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(W*0.05,HEADER_H*0.8,55*sc,0,Math.PI*2);ctx.fill();
+  // ── TOPO: TÍTULO + UNIDADE ──────────────────────────────────
+  ctx.fillStyle="rgba(74,202,202,0.12)";
+  ctx.fillRect(0,0,W,HEADER_H);
 
-  // Título principal
-  ctx.shadowColor="rgba(0,0,0,0.4)"; ctx.shadowBlur=6*sc;
-  ctx.fillStyle="#ffffff";
-  ctx.font="bold "+(40*sc)+"px Arial Black,Arial,sans-serif";
+  // Título
+  ctx.fillStyle="#4acaca";
+  ctx.font="bold "+(36*sc)+"px Arial Black,Arial,sans-serif";
   ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.fillText("RELATÓRIO DE ATENDIMENTOS",cx,46*sc);
-  ctx.shadowBlur=0; ctx.shadowColor="transparent";
+  ctx.fillText("RELATÓRIO DE ATENDIMENTOS",cx,42*sc);
 
   // Linha dourada decorativa
-  var lg=ctx.createLinearGradient(cx-200*sc,0,cx+200*sc,0);
-  lg.addColorStop(0,"rgba(232,160,16,0)"); lg.addColorStop(0.2,"#e8a010"); lg.addColorStop(0.8,"#e8a010"); lg.addColorStop(1,"rgba(232,160,16,0)");
-  ctx.fillStyle=lg; ctx.fillRect(cx-200*sc,66*sc,400*sc,3*sc);
+  var lg=ctx.createLinearGradient(40*sc,0,(W-40*sc),0);
+  lg.addColorStop(0,"rgba(232,160,16,0)"); lg.addColorStop(0.5,"#e8a010"); lg.addColorStop(1,"rgba(232,160,16,0)");
+  ctx.fillStyle=lg; ctx.fillRect(40*sc,66*sc,(W-80*sc),2*sc);
 
-  // Caixa do nome da unidade
-  ctx.fillStyle="rgba(5,25,25,0.6)";
-  rr(ctx,40*sc,78*sc,W-80*sc,50*sc,12*sc); ctx.fill();
-  ctx.strokeStyle="rgba(74,202,202,0.6)"; ctx.lineWidth=1.5;
-  rr(ctx,40*sc,78*sc,W-80*sc,50*sc,12*sc); ctx.stroke();
-  ctx.fillStyle="#4acaca";
-  ctx.font="bold "+(24*sc)+"px Arial,sans-serif";
+  // Caixa unidade
+  ctx.fillStyle="rgba(10,30,50,0.7)";
+  rr(ctx,36*sc,76*sc,W-72*sc,50*sc,10*sc); ctx.fill();
+  ctx.strokeStyle="rgba(74,202,202,0.45)"; ctx.lineWidth=1.5*sc;
+  rr(ctx,36*sc,76*sc,W-72*sc,50*sc,10*sc); ctx.stroke();
+  ctx.fillStyle="#ffffff";
+  ctx.font="bold "+(22*sc)+"px Arial,sans-serif";
   ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.fillText(unidade,cx,103*sc);
+  ctx.fillText(unidade,cx,101*sc);
 
   // Período
   ctx.fillStyle="#e8a010";
-  ctx.font="bold "+(32*sc)+"px Arial Black,Arial,sans-serif";
+  ctx.font="bold "+(28*sc)+"px Arial Black,Arial,sans-serif";
   ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.fillText(periodo||"",cx,158*sc);
+  ctx.fillText(periodo||"",cx,155*sc);
 
-  // ══════════════════════════════════════════════════════════════
-  // 2. ÁREA DOS PROFISSIONAIS — com foto de fundo
-  // ══════════════════════════════════════════════════════════════
-  var rowAreaY = HEADER_H;
+  // Linha separadora
+  ctx.fillStyle=lg; ctx.fillRect(40*sc,(HEADER_H-4*sc),(W-80*sc),2*sc);
 
-  // Fundo da área das linhas
-  ctx.fillStyle="#0a1818"; ctx.fillRect(0,rowAreaY,W,ROWS_H);
+  // ── NÚMERO TOTAL GIGANTE — ÂNCORA CENTRAL ───────────────────
+  var totCY=HEADER_H+TOTAL_AREA/2;
 
-  // Foto removida do fundo das linhas (reservado para futura melhoria de design)
+  // Sombra difusa (sem círculo) — glow suave no fundo do número
+  ctx.shadowColor="rgba(232,160,16,0.55)";
+  ctx.shadowBlur=60*sc;
+  ctx.shadowOffsetY=0;
+  ctx.fillStyle="#e8a010";
+  ctx.font="bold "+(110*sc)+"px Arial Black,Arial,sans-serif";
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText(String(total),cx,totCY-6*sc);
+  // Segunda passada para intensificar o glow
+  ctx.shadowBlur=30*sc;
+  ctx.fillText(String(total),cx,totCY-6*sc);
+  ctx.shadowBlur=0; ctx.shadowColor="transparent"; ctx.shadowOffsetY=0;
 
-  // Linhas dos profissionais
-  for(var i=0;i<profs.length;i++){
-    var p=profs[i];
-    var ry=rowAreaY+i*ROW_H, rh=ROW_H-7*sc, px=32*sc;
-    ctx.fillStyle=i%2===0?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.15)";
-    rr(ctx,px,ry+3*sc,W-px*2,rh,8*sc); ctx.fill();
-    // Borda lateral dourada
-    ctx.fillStyle="#e8a010"; ctx.fillRect(px+1,ry+10*sc,4*sc,rh-20*sc);
-    // Seta
-    ctx.fillStyle="#e8a010"; ctx.font="bold "+(28*sc)+"px Arial";
-    ctx.textAlign="left"; ctx.textBaseline="middle"; ctx.fillText("›",px+10*sc,ry+rh/2+3*sc);
-    // Nome
-    var nmW=W-px*2-50*sc-88*sc;
-    ctx.fillStyle="#ffffff"; ctx.font="bold "+(17*sc)+"px Arial,sans-serif";
+  ctx.fillStyle="rgba(255,255,255,0.75)";
+  ctx.font="bold "+(16*sc)+"px Arial,sans-serif";
+  ctx.textAlign="center"; ctx.textBaseline="top";
+  ctx.fillText("ATENDIMENTOS REALIZADOS",cx,totCY+52*sc);
+
+  // Separador dourado antes das linhas
+  ctx.fillStyle=lg; ctx.fillRect(40*sc,HEADER_H+TOTAL_AREA-6*sc,(W-80*sc),2*sc);
+
+  // ── LISTA DE PROFISSIONAIS ───────────────────────────────────
+  var rowY=HEADER_H+TOTAL_AREA;
+  profs.forEach(function(p,i){
+    var ry=rowY+i*ROW_H, rh=ROW_H-1*sc;
+
+    // Fundo linha alternado
+    if(i%2===0){ ctx.fillStyle="rgba(74,202,202,0.05)"; ctx.fillRect(0,ry,W,rh+1*sc); }
+
+    // Barra lateral ciano
+    ctx.fillStyle="rgba(74,202,202,0.55)";
+    ctx.fillRect(10*sc,ry+6*sc,3*sc,rh-12*sc);
+
+    // Nome profissional
+    var nmW=W-130*sc;
+    ctx.fillStyle="#ffffff"; ctx.font="bold "+(16*sc)+"px Arial,sans-serif";
     ctx.textAlign="left"; ctx.textBaseline="top";
-    ctx.fillText(trunc(ctx,p.nome,nmW),px+42*sc,ry+9*sc);
+    ctx.fillText(trunc(ctx,p.nome,nmW),20*sc,ry+5*sc);
+
     // Especialidade
-    ctx.fillStyle="#ffd06a"; ctx.font="italic "+(12*sc)+"px Arial,sans-serif";
-    ctx.fillText(trunc(ctx,"("+p.esp+")",nmW+36*sc),px+42*sc,ry+29*sc);
-    // Número de atendimentos
-    ctx.fillStyle="#ffffff"; ctx.font="bold "+(42*sc)+"px Arial Black,Arial,sans-serif";
+    ctx.fillStyle="rgba(255,208,106,0.8)"; ctx.font="italic "+(12*sc)+"px Arial,sans-serif";
+    ctx.fillText(trunc(ctx,p.esp,nmW+20*sc),20*sc,ry+22*sc);
+
+    // Número colorido por volume
+    var qtd=parseInt(p.qtd)||0;
+    var col=qtd>=100?"#5dcaa5":qtd>=50?"#85b7eb":qtd>=20?"#e8a010":"rgba(255,255,255,0.65)";
+    ctx.fillStyle=col;
+    ctx.font="bold "+(32*sc)+"px Arial Black,Arial,sans-serif";
     ctx.textAlign="right"; ctx.textBaseline="middle";
-    ctx.fillText(String(p.qtd).padStart(2,"0"),W-px-8*sc,ry+rh/2+3*sc);
-  }
+    ctx.fillText(String(qtd).padStart(2,"0"),W-12*sc,ry+rh/2);
+  });
 
-  // ══════════════════════════════════════════════════════════════
-  // 3. RODAPÉ AZUL COM ONDA
-  // ══════════════════════════════════════════════════════════════
-  var fy = rowAreaY + ROWS_H;
-  var waveH = 32*sc;
+  // ── RODAPÉ COM ONDA ──────────────────────────────────────────
+  var fy=rowY+ROWS_H;
+  var waveH=20*sc;
 
-  // Gradiente azul navy
-  var bg2=ctx.createRadialGradient(cx,fy+FOOTER_H/2,20,cx,fy+FOOTER_H/2,W*0.7);
-  bg2.addColorStop(0,"#0164e5"); bg2.addColorStop(0.4,"#0052c2");
-  bg2.addColorStop(0.75,"#01307e"); bg2.addColorStop(1,"#00276a");
-  ctx.fillStyle=bg2;
-
-  // Forma com onda bezier no topo
+  // Gradiente rodapé
+  var fg=ctx.createLinearGradient(0,fy,0,H);
+  fg.addColorStop(0,"#002848"); fg.addColorStop(1,"#001828");
+  ctx.fillStyle=fg;
   ctx.beginPath();
   ctx.moveTo(0,fy+waveH);
-  ctx.bezierCurveTo(W*0.25,fy-4*sc, W*0.75,fy+waveH*2.2, W,fy+waveH);
-  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
-  ctx.fill();
+  ctx.bezierCurveTo(W*0.3,fy-6*sc, W*0.7,fy+waveH*2.2, W,fy+waveH);
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
 
-  // Linha brilhante na crista da onda
-  ctx.strokeStyle="rgba(74,202,202,0.4)"; ctx.lineWidth=2*sc;
+  // Linha brilhante onda
+  ctx.strokeStyle="rgba(74,202,202,0.35)"; ctx.lineWidth=2*sc;
   ctx.beginPath();
   ctx.moveTo(0,fy+waveH);
-  ctx.bezierCurveTo(W*0.25,fy-4*sc, W*0.75,fy+waveH*2.2, W,fy+waveH);
+  ctx.bezierCurveTo(W*0.3,fy-6*sc, W*0.7,fy+waveH*2.2, W,fy+waveH);
   ctx.stroke();
 
-  var total=profs.reduce(function(s,pp){return s+(parseInt(pp.qtd)||0);},0);
+  var footerMid=fy+waveH+(H-fy-waveH)/2-8*sc;
 
-  // Área do conteúdo do rodapé (abaixo da onda)
-  var contentTop = fy + waveH*1.2;
-  var contentH   = H - contentTop;
-  var midY       = contentTop + contentH/2 - 10*sc; // centro vertical (ligeiramente acima para dar espaço ao slogan)
+  // Logos
+  var lh=68*sc, lTop=footerMid-lh/2;
+  if(logoSemsauOk&&imgSemsau.naturalWidth){var rL=imgSemsau.naturalWidth/imgSemsau.naturalHeight;ctx.drawImage(imgSemsau,W*0.14-lh*rL/2,lTop,lh*rL,lh);}
+  if(logoPrefOk&&imgPref.naturalWidth){var rR=imgPref.naturalWidth/imgPref.naturalHeight;ctx.drawImage(imgPref,W*0.86-lh*rR/2,lTop,lh*rR,lh);}
 
-  // Logos nas laterais — verticalmente centrados com a badge
-  var lh=78*sc, lTop=midY-lh/2;
-  if(logoSemsauOk&&imgSemsau.naturalWidth){var rL=imgSemsau.naturalWidth/imgSemsau.naturalHeight;ctx.drawImage(imgSemsau,W*0.15-lh*rL/2,lTop,lh*rL,lh);}
-  if(logoPrefOk&&imgPref.naturalWidth){var rR=imgPref.naturalWidth/imgPref.naturalHeight;ctx.drawImage(imgPref,W*0.85-lh*rR/2,lTop,lh*rR,lh);}
-
-  // Badge TOTAL centralizada
-  var bW=300*sc, bH=44*sc, bX=cx-bW/2, bY=midY-bH/2;
-  ctx.shadowColor="rgba(0,0,0,0.5)"; ctx.shadowBlur=12*sc; ctx.shadowOffsetY=3*sc;
-  ctx.fillStyle="#e8a010"; rr(ctx,bX,bY,bW,bH,10*sc); ctx.fill();
-  ctx.shadowBlur=0; ctx.shadowOffsetY=0;
-
-  // Brilho interno
-  var sh=ctx.createLinearGradient(bX,bY,bX,bY+bH/2);
-  sh.addColorStop(0,"rgba(255,255,255,0.25)"); sh.addColorStop(1,"rgba(255,255,255,0)");
-  ctx.fillStyle=sh; rr(ctx,bX,bY,bW,bH/2,10*sc); ctx.fill();
-
-  // Texto badge — número em destaque
-  var lt="TOTAL GERAL:  ", ut="  atendimentos", ts=String(total);
-  ctx.font="bold "+(13*sc)+"px Arial"; ctx.textBaseline="middle"; ctx.textAlign="left";
-  var lw=ctx.measureText(lt).width;
-  ctx.font="bold "+(22*sc)+"px Arial Black,Arial";
-  var nw=ctx.measureText(ts).width;
-  ctx.font="bold "+(13*sc)+"px Arial";
-  var uw=ctx.measureText(ut).width;
-  var sx=cx-(lw+nw+uw)/2;
-  ctx.fillStyle="#1a1a00"; ctx.fillText(lt,sx,bY+bH/2);
-  ctx.font="bold "+(22*sc)+"px Arial Black,Arial"; ctx.fillStyle="#000"; ctx.fillText(ts,sx+lw,bY+bH/2);
-  ctx.font="bold "+(13*sc)+"px Arial"; ctx.fillStyle="#1a1a00"; ctx.fillText(ut,sx+lw+nw,bY+bH/2);
-
-  // Slogan — abaixo da badge com espaço garantido
-  ctx.fillStyle="#f0d060"; ctx.font="bold "+(12*sc)+"px Arial";
+  // Slogan centro
+  ctx.fillStyle="rgba(74,202,202,0.9)"; ctx.font="bold "+(11*sc)+"px Arial,sans-serif";
   ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.fillText("TRANSPARÊNCIA E RESPONSABILIDADE",cx,bY+bH+18*sc);
+  ctx.fillText("SEMSAU · COSTA MARQUES - RO",cx,footerMid-8*sc);
+  ctx.fillStyle="#e8a010"; ctx.font="bold "+(10*sc)+"px Arial,sans-serif";
+  ctx.fillText("TRANSPARÊNCIA E RESPONSABILIDADE",cx,footerMid+8*sc);
 
   return H;
 }

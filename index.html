@@ -72,6 +72,20 @@ input[type=file] { color: var(--muted); font-size: 12px; width: 100%; }
 .msg { font-size: 12px; color: #4aca4a; text-align: center; min-height: 18px; }
 .preview-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; align-self: flex-start; }
 #canvas { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); display: block; }
+#page-footer {
+  background: #081018;
+  border-top: 1px solid #2a4040;
+  text-align: center;
+  padding: 14px 20px;
+  color: #60a0a0;
+  font-size: 11px;
+  line-height: 1.8;
+}
+#page-footer .footer-line { margin: 1px 0; }
+#page-footer strong { color: #4acaca; font-weight: bold; }
+@media (max-width: 700px) {
+  #page-footer { font-size: 10px; padding: 12px 14px; }
+}
 .btn-row { display: flex; gap: 4px; }
 .btn-mv { background: none; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; cursor: pointer; font-size: 11px; }
 .unit-row { display: flex; align-items: flex-end; gap: 6px; }
@@ -142,6 +156,14 @@ input[type=file] { color: var(--muted); font-size: 12px; width: 100%; }
 </div>
 
 </div><!-- fim layout -->
+
+<!-- ── RODAPÉ DA PÁGINA ── -->
+<footer id="page-footer">
+  <div class="footer-line"><strong>SEMSAU</strong> — Secretaria Municipal de Saúde</div>
+  <div class="footer-line">Desenvolvido por <strong>Ewerson Luiz de Oliveira</strong> · Gestor em Tecnologia da Informação</div>
+  <div class="footer-line" id="footer-date"></div>
+  <div class="footer-line">© 2026 Prefeitura Municipal de Costa Marques / RO. Todos os direitos reservados.</div>
+</footer>
 
 <script>
 // ── Logos via FileReader (sem taint de canvas) ────────────────
@@ -296,7 +318,7 @@ function trunc(ctx,text,maxW){if(ctx.measureText(text).width<=maxW)return text;v
 
 // ── Desenhar cartaz ──────────────────────────────────────────
 function drawPoster(ctx,W,profs,unidade,periodo){
-  var ROW_H=82,FOOTER_H=112,sc=W/800;
+  var ROW_H=82,FOOTER_H=100,sc=W/800;
   var H=280*sc+profs.length*ROW_H*sc+FOOTER_H*sc;
   ctx.canvas.width=W;ctx.canvas.height=H;
 
@@ -330,17 +352,23 @@ function drawPoster(ctx,W,profs,unidade,periodo){
   }
 
   var fy=y+profs.length*ROW_H*sc+14*sc;
-  var grad=ctx.createRadialGradient(cx,fy+56*sc,10,cx,fy+56*sc,W*0.65);
+  var grad=ctx.createRadialGradient(cx,fy+50*sc,10,cx,fy+50*sc,W*0.65);
   grad.addColorStop(0,"#0164e5");grad.addColorStop(0.45,"#0052c2");grad.addColorStop(0.75,"#01307e");grad.addColorStop(1,"#00276a");
   ctx.fillStyle=grad;ctx.fillRect(0,fy,W,H-fy);
 
   var total=profs.reduce(function(s,pp){return s+(parseInt(pp.qtd)||0);},0);
-  var lh=76*sc,ly=fy+8*sc;
+
+  // Centralizar conteúdo no bloco azul:
+  // logos (76px) e badge (44px) alinhados verticalmente no centro
+  // bloco total ~84px → padding = (100-84)/2 = 8px
+  var lh=76*sc, ly=fy+8*sc;
   if(logoSemsauOk&&imgSemsau.naturalWidth){var rL=imgSemsau.naturalWidth/imgSemsau.naturalHeight;ctx.drawImage(imgSemsau,W*0.17-lh*rL/2,ly,lh*rL,lh);}
   if(logoPrefOk&&imgPref.naturalWidth){var rR=imgPref.naturalWidth/imgPref.naturalHeight;ctx.drawImage(imgPref,W*0.83-lh*rR/2,ly,lh*rR,lh);}
 
-  // Sombra da badge total
-  var bW=300*sc,bH=44*sc,bX=cx-bW/2,bY=fy+16*sc;
+  // Badge centralizada verticalmente com as logos
+  // centro da logo = ly + lh/2 = fy+8+38 = fy+46
+  // badge fica com centro no mesmo ponto → bY = fy+46 - 22 = fy+24
+  var bW=300*sc,bH=44*sc,bX=cx-bW/2,bY=fy+24*sc;
   ctx.shadowColor="rgba(0,0,0,0.5)";ctx.shadowBlur=12*sc;ctx.shadowOffsetY=3*sc;
   ctx.fillStyle="#e8a010";rr(ctx,bX,bY,bW,bH,10*sc);ctx.fill();
   ctx.shadowColor="transparent";ctx.shadowBlur=0;ctx.shadowOffsetY=0;
@@ -373,9 +401,10 @@ function drawPoster(ctx,W,profs,unidade,periodo){
   ctx.fillText(unitTxt,startX+labelW+numW,bY+bH/2);
 
   // Slogan
+  // Slogan posicionado logo abaixo da badge
   ctx.fillStyle="#f0d060";ctx.font="bold "+(11*sc)+"px Arial";
   ctx.textAlign="center";ctx.textBaseline="middle";
-  ctx.fillText("TRANSPARÊNCIA E RESPONSABILIDADE",cx,bY+bH+13*sc);
+  ctx.fillText("TRANSPARÊNCIA E RESPONSABILIDADE",cx,fy+81*sc);
 
   return H;
 }
@@ -413,6 +442,19 @@ function exportPNG(mode){
 loadState();
 loadLogoFromStorage();
 renderAll();
+
+// Data de acesso
+(function(){
+  var now = new Date();
+  var dd = String(now.getDate()).padStart(2,"0");
+  var mm = String(now.getMonth()+1).padStart(2,"0");
+  var yy = now.getFullYear();
+  var hh = String(now.getHours()).padStart(2,"0");
+  var mi = String(now.getMinutes()).padStart(2,"0");
+  var ss = String(now.getSeconds()).padStart(2,"0");
+  var el = document.getElementById("footer-date");
+  if(el) el.textContent = "Data de acesso: "+dd+"/"+mm+"/"+yy+", "+hh+":"+mi+":"+ss;
+})();
 </script>
 </body>
 </html>

@@ -339,10 +339,43 @@ function drawPoster(ctx,W,profs,unidade,periodo){
   if(logoSemsauOk&&imgSemsau.naturalWidth){var rL=imgSemsau.naturalWidth/imgSemsau.naturalHeight;ctx.drawImage(imgSemsau,W*0.17-lh*rL/2,ly,lh*rL,lh);}
   if(logoPrefOk&&imgPref.naturalWidth){var rR=imgPref.naturalWidth/imgPref.naturalHeight;ctx.drawImage(imgPref,W*0.83-lh*rR/2,ly,lh*rR,lh);}
 
-  var bW=240*sc,bH=32*sc,bX=cx-bW/2,bY=fy+20*sc;
-  ctx.fillStyle="#e8a010";rr(ctx,bX,bY,bW,bH,8*sc);ctx.fill();
-  ctx.fillStyle="#000";ctx.font="bold "+(15*sc)+"px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("TOTAL GERAL: "+total+" atendimentos",cx,bY+bH/2);
-  ctx.fillStyle="#f0d060";ctx.font="bold "+(11*sc)+"px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("TRANSPARÊNCIA E RESPONSABILIDADE",cx,bY+bH+12*sc);
+  // Sombra da badge total
+  var bW=300*sc,bH=44*sc,bX=cx-bW/2,bY=fy+16*sc;
+  ctx.shadowColor="rgba(0,0,0,0.5)";ctx.shadowBlur=12*sc;ctx.shadowOffsetY=3*sc;
+  ctx.fillStyle="#e8a010";rr(ctx,bX,bY,bW,bH,10*sc);ctx.fill();
+  ctx.shadowColor="transparent";ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+
+  // Brilho interno no topo da badge
+  var shine=ctx.createLinearGradient(bX,bY,bX,bY+bH/2);
+  shine.addColorStop(0,"rgba(255,255,255,0.25)");shine.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=shine;rr(ctx,bX,bY,bW,bH/2,10*sc);ctx.fill();
+
+  // Texto TOTAL com número em destaque maior
+  var totalStr=String(total);
+  var labelTxt="TOTAL GERAL:  ";
+  var unitTxt="  atendimentos";
+  ctx.font="bold "+(13*sc)+"px Arial";ctx.textAlign="center";ctx.textBaseline="middle";
+  var labelW=ctx.measureText(labelTxt).width;
+  var unitW=ctx.measureText(unitTxt).width;
+  ctx.font="bold "+(20*sc)+"px Arial Black,Arial";
+  var numW=ctx.measureText(totalStr).width;
+  var totalLineW=labelW+numW+unitW;
+  var startX=cx-totalLineW/2;
+
+  ctx.fillStyle="#1a1a00";ctx.font="bold "+(13*sc)+"px Arial";
+  ctx.textAlign="left";ctx.textBaseline="middle";
+  ctx.fillText(labelTxt,startX,bY+bH/2);
+
+  ctx.fillStyle="#000";ctx.font="bold "+(22*sc)+"px Arial Black,Arial";
+  ctx.fillText(totalStr,startX+labelW,bY+bH/2);
+
+  ctx.fillStyle="#1a1a00";ctx.font="bold "+(13*sc)+"px Arial";
+  ctx.fillText(unitTxt,startX+labelW+numW,bY+bH/2);
+
+  // Slogan
+  ctx.fillStyle="#f0d060";ctx.font="bold "+(11*sc)+"px Arial";
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText("TRANSPARÊNCIA E RESPONSABILIDADE",cx,bY+bH+13*sc);
 
   return H;
 }

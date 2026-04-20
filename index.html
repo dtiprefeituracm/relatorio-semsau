@@ -51,13 +51,7 @@ input[type=text]:focus, input[type=number]:focus { border-color: var(--accent); 
 .import-hint { color: #80a0a0; font-size: 11px; margin-bottom: 6px; }
 .import-hint strong { color: #a0c0c0; }
 input[type=file] { color: var(--muted); font-size: 12px; width: 100%; }
-.logo-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
-.logo-box-title { color: var(--accent); font-size: 12px; font-weight: bold; margin-bottom: 8px; }
-.logo-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.logo-row label { margin: 0; width: 75px; font-size: 10px; flex-shrink: 0; }
-.logo-row input[type=file] { flex: 1; font-size: 11px; }
-.logo-dot { width: 9px; height: 9px; border-radius: 50%; background: #444; flex-shrink: 0; }
-.logo-dot.ok { background: #4aca4a; }
+
 .prof-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .prof-title { color: var(--accent); font-size: 13px; font-weight: bold; }
 .btn-add { background: #2a7070; color: white; border: none; border-radius: 5px; padding: 6px 12px; cursor: pointer; font-size: 12px; }
@@ -91,20 +85,7 @@ input[type=file] { color: var(--muted); font-size: 12px; width: 100%; }
 <div id="sidebar">
   <h1>&#128203; Gerador de Relatório SEMSAU</h1>
 
-  <!-- Logos -->
-  <div class="logo-box">
-    <div class="logo-box-title">Logos (carregam automaticamente)</div>
-    <div class="logo-row">
-      <label>SEMSAU</label>
-      <input type="file" id="logoSemsauFile" accept=".png,.jpg,.jpeg">
-      <span class="logo-dot" id="dotSemsau"></span>
-    </div>
-    <div class="logo-row">
-      <label>Gestão/Pref.</label>
-      <input type="file" id="logoPrefFile" accept=".png,.jpg,.jpeg">
-      <span class="logo-dot" id="dotPref"></span>
-    </div>
-  </div>
+
 
   <!-- Abas -->
   <div><div class="tabs" id="tabBar"></div></div>
@@ -172,43 +153,22 @@ var logoSemsauOk = false, logoPrefOk = false;
 function loadLogoFromStorage(){
   // 1) Tenta carregar do repositório (GitHub Pages) automaticamente
   var base = window.location.href.replace(/\/[^/]*$/, "/");
-  imgSemsau.onload = function(){ logoSemsauOk=true; setDot("dotSemsau",true); draw(); };
-  imgSemsau.onerror = function(){
-    // 2) Fallback: tenta localStorage
-    var s = localStorage.getItem("logo_semsau");
-    if(s){ imgSemsau.onload=function(){logoSemsauOk=true;setDot("dotSemsau",true);draw();}; imgSemsau.src=s; }
-  };
+  imgSemsau.onload  = function(){ logoSemsauOk=true; draw(); };
+  imgSemsau.onerror = function(){ logoSemsauOk=false; };
   imgSemsau.src = base + "semsau.png";
 
-  imgPref.onload = function(){ logoPrefOk=true; setDot("dotPref",true); draw(); };
-  imgPref.onerror = function(){
-    var p = localStorage.getItem("logo_pref");
-    if(p){ imgPref.onload=function(){logoPrefOk=true;setDot("dotPref",true);draw();}; imgPref.src=p; }
-  };
+  imgPref.onload  = function(){ logoPrefOk=true; draw(); };
+  imgPref.onerror = function(){ logoPrefOk=false; };
   imgPref.src = base + "gestao.png";
 }
-function setDot(id,ok){ var el=document.getElementById(id); if(el) el.className="logo-dot"+(ok?" ok":""); }
 
-function setupLogoInput(inputId,key,imgObj,dotId,setter){
-  document.getElementById(inputId).addEventListener("change",function(e){
-    var f=e.target.files[0]; if(!f) return;
-    var reader=new FileReader();
-    reader.onload=function(ev){
-      var url=ev.target.result;
-      try{ localStorage.setItem(key,url); }catch(ex){}
-      imgObj.crossOrigin="anonymous";
-      imgObj.onload=function(){ setter(true); setDot(dotId,true); draw(); };
-      imgObj.src=url;
-    };
-    reader.readAsDataURL(f);
-  });
-}
-setupLogoInput("logoSemsauFile","logo_semsau",imgSemsau,"dotSemsau",function(v){logoSemsauOk=v;});
-setupLogoInput("logoPrefFile",  "logo_pref",  imgPref,  "dotPref",  function(v){logoPrefOk=v;});
+
+
+
 
 // ── Dados padrão ──────────────────────────────────────────────
 var DEFAULT_UNITS=[
-  {id:"ubs",nome:"UBS ANESTINO DE ALMEIDA",periodo:"17 E 18 DE ABRIL",cidade:"Costa Marques - RO",profs:[
+  {id:"ubs",nome:"UBS ANTONIO DE CARVALHO",periodo:"17 E 18 DE ABRIL",cidade:"Costa Marques - RO",profs:[
     {nome:"Dr. Alexandre",esp:"Clínico Geral",qtd:17},
     {nome:"Dra. Natália e Jefferson Miranda",esp:"Passe Livre / Ação Mobilidade e Serviço Social",qtd:75},
     {nome:"Dr. Pagoto",esp:"Programa Emagreça São Francisco",qtd:13},

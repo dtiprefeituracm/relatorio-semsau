@@ -93,7 +93,7 @@ input[type=file] { color: var(--muted); font-size: 12px; width: 100%; }
 
   <!-- Logos -->
   <div class="logo-box">
-    <div class="logo-box-title">Logos (selecione — fica salvo)</div>
+    <div class="logo-box-title">Logos (carregam automaticamente)</div>
     <div class="logo-row">
       <label>SEMSAU</label>
       <input type="file" id="logoSemsauFile" accept=".png,.jpg,.jpeg">
@@ -165,13 +165,27 @@ input[type=file] { color: var(--muted); font-size: 12px; width: 100%; }
 <script>
 // ── Logos via FileReader (sem taint de canvas) ────────────────
 var imgSemsau = new Image(), imgPref = new Image();
+imgSemsau.crossOrigin = "anonymous";
+imgPref.crossOrigin   = "anonymous";
 var logoSemsauOk = false, logoPrefOk = false;
 
 function loadLogoFromStorage(){
-  var s = localStorage.getItem("logo_semsau");
-  var p = localStorage.getItem("logo_pref");
-  if(s){ imgSemsau.onload=function(){logoSemsauOk=true;setDot("dotSemsau",true);draw();}; imgSemsau.src=s; }
-  if(p){ imgPref.onload=function(){logoPrefOk=true;setDot("dotPref",true);draw();}; imgPref.src=p; }
+  // 1) Tenta carregar do repositório (GitHub Pages) automaticamente
+  var base = window.location.href.replace(/\/[^/]*$/, "/");
+  imgSemsau.onload = function(){ logoSemsauOk=true; setDot("dotSemsau",true); draw(); };
+  imgSemsau.onerror = function(){
+    // 2) Fallback: tenta localStorage
+    var s = localStorage.getItem("logo_semsau");
+    if(s){ imgSemsau.onload=function(){logoSemsauOk=true;setDot("dotSemsau",true);draw();}; imgSemsau.src=s; }
+  };
+  imgSemsau.src = base + "semsau.png";
+
+  imgPref.onload = function(){ logoPrefOk=true; setDot("dotPref",true); draw(); };
+  imgPref.onerror = function(){
+    var p = localStorage.getItem("logo_pref");
+    if(p){ imgPref.onload=function(){logoPrefOk=true;setDot("dotPref",true);draw();}; imgPref.src=p; }
+  };
+  imgPref.src = base + "gestao.png";
 }
 function setDot(id,ok){ var el=document.getElementById(id); if(el) el.className="logo-dot"+(ok?" ok":""); }
 
@@ -182,6 +196,7 @@ function setupLogoInput(inputId,key,imgObj,dotId,setter){
     reader.onload=function(ev){
       var url=ev.target.result;
       try{ localStorage.setItem(key,url); }catch(ex){}
+      imgObj.crossOrigin="anonymous";
       imgObj.onload=function(){ setter(true); setDot(dotId,true); draw(); };
       imgObj.src=url;
     };

@@ -451,29 +451,53 @@ function drawPoster(ctx,W,profs,unidade,periodo){
   // ── NÚMERO TOTAL GIGANTE — ÂNCORA CENTRAL ───────────────────
   var totCY=HEADER_H+TOTAL_AREA/2;
 
-  // Sombra difusa (sem círculo) — glow suave no fundo do número
-  ctx.shadowColor="rgba(232,160,16,0.55)";
-  ctx.shadowBlur=60*sc;
-  ctx.shadowOffsetY=0;
-  ctx.fillStyle="#e8a010";
+  // Número total — glow dourado + sombra branca para máximo destaque
   ctx.font="bold "+(110*sc)+"px Arial Black,Arial,sans-serif";
   ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.fillText(String(total),cx,totCY-6*sc);
-  // Segunda passada para intensificar o glow
-  ctx.shadowBlur=30*sc;
-  ctx.fillText(String(total),cx,totCY-6*sc);
-  ctx.shadowBlur=0; ctx.shadowColor="transparent"; ctx.shadowOffsetY=0;
 
-  ctx.fillStyle="rgba(255,255,255,0.75)";
+  // Camada 1: sombra branca externa (destaque)
+  ctx.shadowColor="rgba(255,255,255,0.55)";
+  ctx.shadowBlur=40*sc;
+  ctx.shadowOffsetX=0; ctx.shadowOffsetY=0;
+  ctx.fillStyle="#e8a010";
+  ctx.fillText(String(total),cx,totCY-6*sc);
+
+  // Camada 2: glow dourado intenso (identidade)
+  ctx.shadowColor="rgba(232,160,16,0.8)";
+  ctx.shadowBlur=25*sc;
+  ctx.fillText(String(total),cx,totCY-6*sc);
+
+  // Camada 3: passada final limpa sem sombra
+  ctx.shadowBlur=0; ctx.shadowColor="transparent"; ctx.shadowOffsetY=0;
+  ctx.fillText(String(total),cx,totCY-6*sc);
+
+  // Label "ATENDIMENTOS REALIZADOS" com sombra branca leve
+  ctx.shadowColor="rgba(255,255,255,0.3)";
+  ctx.shadowBlur=8*sc;
+  ctx.fillStyle="rgba(255,255,255,0.85)";
   ctx.font="bold "+(16*sc)+"px Arial,sans-serif";
   ctx.textAlign="center"; ctx.textBaseline="top";
   ctx.fillText("ATENDIMENTOS REALIZADOS",cx,totCY+52*sc);
+  ctx.shadowBlur=0; ctx.shadowColor="transparent";
 
   // Separador dourado antes das linhas
   ctx.fillStyle=lg; ctx.fillRect(40*sc,HEADER_H+TOTAL_AREA-6*sc,(W-80*sc),2*sc);
 
   // ── LISTA DE PROFISSIONAIS ───────────────────────────────────
   var rowY=HEADER_H+TOTAL_AREA;
+
+  // ── MARCA DAGUA: logo centralizada atras das linhas ──────────
+  if(logoMidOk && imgMid.naturalWidth){
+    var mH=ROWS_H*0.70;
+    var mRatio=imgMid.naturalWidth/imgMid.naturalHeight;
+    var mW=mH*mRatio;
+    ctx.save();
+    ctx.globalCompositeOperation="screen";
+    ctx.globalAlpha=0.09;
+    ctx.drawImage(imgMid, cx-mW/2, rowY+(ROWS_H-mH)/2, mW, mH);
+    ctx.restore();
+  }
+
   profs.forEach(function(p,i){
     var ry=rowY+i*ROW_H, rh=ROW_H-1*sc;
 
@@ -517,10 +541,15 @@ function drawPoster(ctx,W,profs,unidade,periodo){
     }
 
     // Número
+    // Sombra branca no numero para destaque
+    ctx.shadowColor="rgba(255,255,255,0.35)";
+    ctx.shadowBlur=12*sc;
+    ctx.shadowOffsetX=0; ctx.shadowOffsetY=0;
     ctx.fillStyle=col;
     ctx.font="bold "+(32*sc)+"px Arial Black,Arial,sans-serif";
     ctx.textAlign="right"; ctx.textBaseline="middle";
     ctx.fillText(String(qtd).padStart(2,"0"),W-12*sc,ry+rh/2);
+    ctx.shadowColor="transparent"; ctx.shadowBlur=0;
   });
 
   // ── RODAPÉ COM ONDA ──────────────────────────────────────────

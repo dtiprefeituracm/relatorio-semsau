@@ -389,20 +389,21 @@ function drawPoster(ctx,W,profs,unidade,periodo){
   var total=profs.reduce(function(s,p){return s+(parseInt(p.qtd)||0);},0);
 
   // ── FUNDO GRADIENTE DIAGONAL ────────────────────────────────
+  // Gradiente nas cores oficiais da SEMSAU Costa Marques
   var dg=ctx.createLinearGradient(0,0,W,H);
-  dg.addColorStop(0,"#0a3a3a");
-  dg.addColorStop(0.4,"#063060");
-  dg.addColorStop(1,"#020e28");
+  dg.addColorStop(0,"#1a3a6a");   // azul-marinho institucional
+  dg.addColorStop(0.45,"#0f2d5a"); // azul royal escuro
+  dg.addColorStop(1,"#071828");   // azul muito escuro
   ctx.fillStyle=dg; ctx.fillRect(0,0,W,H);
 
   // Linhas diagonais decorativas
-  ctx.strokeStyle="rgba(74,202,202,0.05)"; ctx.lineWidth=1*sc;
+  ctx.strokeStyle="rgba(74,188,188,0.06)"; ctx.lineWidth=1*sc;
   for(var d=-H;d<W+H;d+=35*sc){
     ctx.beginPath();ctx.moveTo(d,0);ctx.lineTo(d+H,H);ctx.stroke();
   }
 
   // ── TOPO: TÍTULO + UNIDADE ──────────────────────────────────
-  ctx.fillStyle="rgba(74,202,202,0.12)";
+  ctx.fillStyle="rgba(43,91,168,0.20)"; // azul SEMSAU oficial
   ctx.fillRect(0,0,W,HEADER_H);
 
   // Título
@@ -419,7 +420,7 @@ function drawPoster(ctx,W,profs,unidade,periodo){
   // Caixa unidade
   ctx.fillStyle="rgba(10,30,50,0.7)";
   rr(ctx,36*sc,76*sc,W-72*sc,50*sc,10*sc); ctx.fill();
-  ctx.strokeStyle="rgba(74,202,202,0.45)"; ctx.lineWidth=1.5*sc;
+  ctx.strokeStyle="rgba(74,188,188,0.55)"; ctx.lineWidth=1.5*sc;
   rr(ctx,36*sc,76*sc,W-72*sc,50*sc,10*sc); ctx.stroke();
   ctx.fillStyle="#ffffff";
   ctx.font="bold "+(22*sc)+"px Arial,sans-serif";
@@ -492,8 +493,7 @@ function drawPoster(ctx,W,profs,unidade,periodo){
     var mRatio=imgMid.naturalWidth/imgMid.naturalHeight;
     var mW=mH*mRatio;
     ctx.save();
-    ctx.globalCompositeOperation="screen";
-    ctx.globalAlpha=0.09;
+    ctx.globalAlpha=0.12; // PNG transparente — sem necessidade de screen
     ctx.drawImage(imgMid, cx-mW/2, rowY+(ROWS_H-mH)/2, mW, mH);
     ctx.restore();
   }
@@ -505,7 +505,7 @@ function drawPoster(ctx,W,profs,unidade,periodo){
     if(i%2===0){ ctx.fillStyle="rgba(74,202,202,0.05)"; ctx.fillRect(0,ry,W,rh+1*sc); }
 
     // Barra lateral ciano
-    ctx.fillStyle="rgba(74,202,202,0.55)";
+    ctx.fillStyle="rgba(74,188,188,0.65)";
     ctx.fillRect(10*sc,ry+6*sc,3*sc,rh-12*sc);
 
     // Nome profissional
@@ -562,7 +562,7 @@ function drawPoster(ctx,W,profs,unidade,periodo){
 
   // Gradiente rodapé
   var fg=ctx.createLinearGradient(0,fy,0,H);
-  fg.addColorStop(0,"#002848"); fg.addColorStop(1,"#001828");
+  fg.addColorStop(0,"#0f2d5a"); fg.addColorStop(1,"#071828"); // cores SEMSAU
   ctx.fillStyle=fg;
   ctx.beginPath();
   ctx.moveTo(0,fy+waveH);

@@ -509,23 +509,27 @@ function drawPoster(ctx,W,profs,unidade,periodo){
     ctx.fillRect(10*sc,ry+6*sc,3*sc,rh-12*sc);
 
     // Nome profissional
-    var nmW=180*sc; // nome limitado para abrir espaço para barra
-    ctx.fillStyle="#ffffff"; ctx.font="bold "+(16*sc)+"px Arial,sans-serif";
+    // Layout: nome(52%) | barra(24%) | número(20%)
+    var nmW=W*0.50;          // nome até 50% da largura — cabe nomes longos
+    var numAreaW=W*0.20;     // espaço do número à direita
+    var barX=20*sc+nmW+8*sc; // barra começa após o nome
+    var barW=W-barX-numAreaW; // barra ocupa o meio
+
+    // Nome — com espaço total disponível
+    ctx.fillStyle="#ffffff"; ctx.font="bold "+(15*sc)+"px Arial,sans-serif";
     ctx.textAlign="left"; ctx.textBaseline="top";
-    ctx.fillText(trunc(ctx,p.nome,nmW),20*sc,ry+5*sc);
+    ctx.fillText(trunc(ctx,p.nome,nmW-10*sc),20*sc,ry+5*sc);
 
     // Especialidade
-    ctx.fillStyle="rgba(255,208,106,0.8)"; ctx.font="italic "+(12*sc)+"px Arial,sans-serif";
-    ctx.fillText(trunc(ctx,p.esp,nmW+20*sc),20*sc,ry+22*sc);
+    ctx.fillStyle="rgba(255,208,106,0.85)"; ctx.font="italic "+(11*sc)+"px Arial,sans-serif";
+    ctx.fillText(trunc(ctx,p.esp,nmW-10*sc),20*sc,ry+23*sc);
 
     // Número colorido por volume
     var qtd=parseInt(p.qtd)||0;
     var col=qtd>=100?"#5dcaa5":qtd>=50?"#85b7eb":qtd>=20?"#e8a010":"rgba(255,255,255,0.65)";
 
-    // Barra de proporção — preenche o vazio entre nome e número
-    var barW=W-nmW-130*sc;   // largura disponível no meio
-    var barX=nmW+24*sc;       // começa após o nome
-    var barH=4*sc;
+    // Barra de proporção — no centro, colorida por volume
+    var barH=5*sc;
     var barY=ry+rh/2-barH/2;
     var maxQtd=Math.max.apply(null,profs.map(function(pp){return parseInt(pp.qtd)||0;}));
     var ratio=maxQtd>0?qtd/maxQtd:0;
@@ -546,9 +550,9 @@ function drawPoster(ctx,W,profs,unidade,periodo){
     ctx.shadowBlur=12*sc;
     ctx.shadowOffsetX=0; ctx.shadowOffsetY=0;
     ctx.fillStyle=col;
-    ctx.font="bold "+(32*sc)+"px Arial Black,Arial,sans-serif";
+    ctx.font="bold "+(30*sc)+"px Arial Black,Arial,sans-serif";
     ctx.textAlign="right"; ctx.textBaseline="middle";
-    ctx.fillText(String(qtd).padStart(2,"0"),W-12*sc,ry+rh/2);
+    ctx.fillText(String(qtd).padStart(2,"0"),W-14*sc,ry+rh/2);
     ctx.shadowColor="transparent"; ctx.shadowBlur=0;
   });
 

@@ -351,28 +351,36 @@ document.getElementById("fileInput").addEventListener("change",function(e){
   if(f.name.toLowerCase().endsWith(".csv")){
     reader.onload=function(ev){
       try{
-        var allLines=ev.target.result.split(/
-?
+        var raw=ev.target.result;
+        var allLines=raw.split(/
+|
+|
 /);
         var metaUnidade="",metaPeriodo="",metaInicio="",metaFim="";
         allLines.forEach(function(l){
-          if(l.startsWith("#UNIDADE,"))    metaUnidade=l.split(",").slice(1).join(",").trim();
-          if(l.startsWith("#PERIODO,"))    metaPeriodo=l.split(",").slice(1).join(",").trim();
-          if(l.startsWith("#DATA_INICIO,"))metaInicio=l.split(",").slice(1).join(",").trim();
-          if(l.startsWith("#DATA_FIM,"))   metaFim=l.split(",").slice(1).join(",").trim();
+          if(l.indexOf("#UNIDADE,")===0)    metaUnidade=l.substring(9).trim();
+          if(l.indexOf("#PERIODO,")===0)    metaPeriodo=l.substring(9).trim();
+          if(l.indexOf("#DATA_INICIO,")===0)metaInicio=l.substring(13).trim();
+          if(l.indexOf("#DATA_FIM,")===0)   metaFim=l.substring(10).trim();
         });
         var dataLines=allLines.filter(function(l){
-          return l.trim()&&!l.startsWith("#")&&!l.toLowerCase().startsWith("nome");
+          var t=l.trim();
+          return t.length>0 && t[0]!="#" && t.toLowerCase().indexOf("nome")!==0;
         });
-        var sep=dataLines.length&&dataLines[0].indexOf(";")!==-1?";":","
-        var parsed=dataLines.map(function(l){
+        if(!dataLines.length){showMsg("CSV sem dados");return;}
+        var sep=dataLines[0].indexOf(";")!==-1?";":","
+        var parsed=[];
+        dataLines.forEach(function(l){
           var p=l.split(sep);
-          return{nome:(p[0]||"").trim(),esp:(p[1]||"").trim(),qtd:parseInt(p[2])||0};
-        }).filter(function(p){return p.nome;});
-        if(!parsed.length){showMsg("CSV vazio ou formato incorreto");return;}
+          var n=(p[0]||"").trim();
+          if(n) parsed.push({nome:n,esp:(p[1]||"").trim(),qtd:parseInt(p[2])||0});
+        });
+        if(!parsed.length){showMsg("Nenhum registro encontrado no CSV");return;}
         if(metaUnidade){
           var found=-1;
-          units.forEach(function(u,i){if(u.nome.toUpperCase()===metaUnidade.toUpperCase())found=i;});
+          for(var i=0;i<units.length;i++){
+            if(units[i].nome.toUpperCase()===metaUnidade.toUpperCase()){found=i;break;}
+          }
           if(found===-1){
             units.push({id:"u"+Date.now(),nome:metaUnidade.toUpperCase(),periodo:metaPeriodo,dataInicio:metaInicio,dataFim:metaFim,cidade:"Costa Marques - RO",profs:parsed});
             activeIdx=units.length-1;
@@ -386,10 +394,14 @@ document.getElementById("fileInput").addEventListener("change",function(e){
         }else{
           units[activeIdx].profs=parsed;
         }
-        saveState();renderAll();
+        saveState();
+        renderAll();
         showMsg(parsed.length+" profissionais importados"+(metaUnidade?" → "+metaUnidade:""));
-      }catch(e){showMsg("Erro no CSV: "+e.message);}
-    };reader.readAsText(f,"UTF-8");
+      }catch(err){
+        showMsg("Erro ao ler CSV: "+err.message);
+      }
+    };
+    reader.readAsText(f,"UTF-8");
   }else{
     reader.onload=function(ev){
       try{

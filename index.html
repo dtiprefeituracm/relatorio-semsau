@@ -6,132 +6,87 @@
 <title>Gerador de Relatório SEMSAU</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg:#0f1a1a; --surface:#162020; --card:#1a2a2a; --border:#2a4040;
-  --accent:#4acaca; --gold:#e8a010; --text:#e0e0e0; --muted:#80b0b0;
-}
-body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
-.layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 80px); }
-#sidebar { width: 355px; min-width: 355px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; padding: 14px; gap: 10px; }
-#preview { flex: 1; padding: 14px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-
-@media (max-width: 700px) {
-  .layout { flex-direction: column; overflow: visible; height: auto; }
-  #sidebar { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid var(--border); overflow: visible; }
-  #preview { padding: 10px; }
-  #canvas { width: 100% !important; height: auto !important; }
-  .export-row { flex-direction: column; }
-  .btn-export { padding: 14px; font-size: 15px; }
-  input[type=text], input[type=number], input[type=date] { font-size: 16px; padding: 10px; }
-}
-
-h1 { font-size: 15px; color: var(--accent); font-weight: bold; }
-.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
-.tab { background: #0f1e1e; border: 1px solid var(--border); color: var(--muted); border-radius: 6px 6px 0 0; padding: 6px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; }
-.tab.active { background: #1a3030; border-color: var(--accent); color: var(--accent); font-weight: bold; }
-.tab-add { background: none; border: 1px dashed #2a6060; color: #4a9090; border-radius: 6px 6px 0 0; padding: 6px 12px; font-size: 12px; cursor: pointer; }
-.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
-label { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; margin-top: 10px; }
-label:first-child { margin-top: 0; }
-input[type=text], input[type=number] { width: 100%; background: #0f1e1e; border: 1px solid #2a5050; color: var(--text); padding: 8px 10px; border-radius: 5px; font-size: 13px; outline: none; }
-input[type=text]:focus, input[type=number]:focus { border-color: var(--accent); }
-input[type=date] { width: 100%; background: #0f1e1e; border: 1px solid #2a5050; color: var(--text); padding: 7px 10px; border-radius: 5px; font-size: 13px; outline: none; }
-input[type=date]:focus { border-color: var(--accent); }
-input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(1) saturate(2) hue-rotate(150deg); cursor: pointer; }
-.date-row { display: flex; gap: 8px; }
-.date-row > div { flex: 1; }
-.periodo-preview { font-size: 11px; color: var(--gold); margin-top: 5px; text-align: center; font-weight: bold; min-height: 16px; }
-
-.import-box { background: var(--card); border: 1px dashed #2a6060; border-radius: 8px; padding: 10px; }
-.import-title { color: var(--accent); font-size: 12px; font-weight: bold; margin-bottom: 5px; }
-.import-hint { color: #80a0a0; font-size: 11px; margin-bottom: 6px; }
-.import-hint strong { color: #a0c0c0; }
-input[type=file] { color: var(--muted); font-size: 12px; width: 100%; }
-
-
-
-.prof-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.prof-title { color: var(--accent); font-size: 13px; font-weight: bold; }
-.btn-add { background: #2a7070; color: white; border: none; border-radius: 5px; padding: 5px 12px; cursor: pointer; font-size: 12px; }
-.prof-list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
-.prof-item { background: #0f1a1a; border: 1px solid #253535; border-radius: 7px; padding: 7px; }
-.prof-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-.prof-num { font-size: 10px; color: var(--muted); }
-.btn-del { background: none; color: #c06060; border: 1px solid #603030; border-radius: 4px; padding: 1px 6px; cursor: pointer; font-size: 11px; }
-.prof-item input { width: 100%; margin-bottom: 3px; }
-.total-box { background: #1a3030; border: 1px solid #2a6060; border-radius: 8px; padding: 8px; text-align: center; margin-top: 8px; }
-.total-label { color: var(--muted); font-size: 10px; }
-.total-num { color: var(--accent); font-size: 26px; font-weight: bold; }
-.export-row { display: flex; gap: 8px; }
-.btn-export { flex: 1; background: var(--gold); color: #000; border: none; border-radius: 8px; padding: 11px 6px; font-size: 13px; font-weight: bold; cursor: pointer; text-align: center; line-height: 1.4; }
-.btn-export.insta { background: #7030a0; color: #fff; }
-.btn-csv { width: 100%; background: #163030; color: var(--accent); border: 1px solid #2a6060; border-radius: 8px; padding: 9px; font-size: 12px; cursor: pointer; }
-.btn-del-unit { background: none; border: 1px solid #603030; color: #c06060; border-radius: 5px; padding: 3px 8px; font-size: 11px; cursor: pointer; }
-.msg { font-size: 12px; color: #4aca4a; text-align: center; min-height: 18px; }
-.preview-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; align-self: flex-start; }
-#canvas { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); display: block; }
-.btn-row { display: flex; gap: 4px; }
-.btn-mv { background: none; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; cursor: pointer; font-size: 11px; }
-.unit-row { display: flex; align-items: flex-end; gap: 6px; }
-.unit-row > div:first-child { flex: 1; }
-
-#page-footer {
-  background: #081018; border-top: 1px solid #2a4040;
-  text-align: center; padding: 14px 20px;
-  color: #60a0a0; font-size: 11px; line-height: 1.9;
-}
-#page-footer strong { color: var(--accent); }
-@media (max-width: 700px) { #page-footer { font-size: 10px; padding: 12px; } }
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f1a1a;--surface:#162020;--card:#1a2a2a;--border:#2a4040;--accent:#4acaca;--gold:#e8a010;--text:#e0e0e0;--muted:#80b0b0}
+body{font-family:Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+.layout{display:flex;flex:1;overflow:hidden;height:calc(100vh - 72px)}
+#sidebar{width:355px;min-width:355px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;padding:14px;gap:10px}
+#preview{flex:1;padding:14px;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:10px}
+@media(max-width:700px){.layout{flex-direction:column;overflow:visible;height:auto}#sidebar{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);overflow:visible}#preview{padding:10px}#canvas{width:100%!important;height:auto!important}.export-row{flex-direction:column}input[type=text],input[type=number],input[type=date]{font-size:16px;padding:10px}}
+h1{font-size:15px;color:var(--accent);font-weight:bold}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{background:#0f1e1e;border:1px solid var(--border);color:var(--muted);border-radius:6px 6px 0 0;padding:6px 12px;font-size:12px;cursor:pointer;white-space:nowrap}
+.tab.active{background:#1a3030;border-color:var(--accent);color:var(--accent);font-weight:bold}
+.tab-add{background:none;border:1px dashed #2a6060;color:#4a9090;border-radius:6px 6px 0 0;padding:6px 12px;font-size:12px;cursor:pointer}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px}
+label{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;margin-top:10px}
+label:first-child{margin-top:0}
+input[type=text],input[type=number]{width:100%;background:#0f1e1e;border:1px solid #2a5050;color:var(--text);padding:8px 10px;border-radius:5px;font-size:13px;outline:none}
+input[type=text]:focus,input[type=number]:focus{border-color:var(--accent)}
+input[type=date]{width:100%;background:#0f1e1e;border:1px solid #2a5050;color:var(--text);padding:7px 10px;border-radius:5px;font-size:13px;outline:none}
+input[type=date]:focus{border-color:var(--accent)}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.7) sepia(1) saturate(2) hue-rotate(150deg);cursor:pointer}
+.date-row{display:flex;gap:8px}
+.date-row>div{flex:1}
+.periodo-preview{font-size:11px;color:var(--gold);margin-top:5px;text-align:center;font-weight:bold;min-height:16px}
+.import-box{background:var(--card);border:1px dashed #2a6060;border-radius:8px;padding:10px}
+.import-title{color:var(--accent);font-size:12px;font-weight:bold;margin-bottom:5px}
+.import-hint{color:#80a0a0;font-size:11px;margin-bottom:6px}
+.import-hint strong{color:#a0c0c0}
+input[type=file]{color:var(--muted);font-size:12px;width:100%}
+.prof-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.prof-title{color:var(--accent);font-size:13px;font-weight:bold}
+.btn-add{background:#2a7070;color:#fff;border:none;border-radius:5px;padding:5px 12px;cursor:pointer;font-size:12px}
+.prof-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto}
+.prof-item{background:#0f1a1a;border:1px solid #253535;border-radius:7px;padding:7px}
+.prof-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.prof-num{font-size:10px;color:var(--muted)}
+.btn-del{background:none;color:#c06060;border:1px solid #603030;border-radius:4px;padding:1px 6px;cursor:pointer;font-size:11px}
+.prof-item input{width:100%;margin-bottom:3px}
+.total-box{background:#1a3030;border:1px solid #2a6060;border-radius:8px;padding:8px;text-align:center;margin-top:8px}
+.total-label{color:var(--muted);font-size:10px}
+.total-num{color:var(--accent);font-size:26px;font-weight:bold}
+.export-row{display:flex;gap:8px}
+.btn-export{flex:1;background:var(--gold);color:#000;border:none;border-radius:8px;padding:11px 6px;font-size:13px;font-weight:bold;cursor:pointer;text-align:center;line-height:1.4}
+.btn-export.insta{background:#7030a0;color:#fff}
+.btn-csv{width:100%;background:#163030;color:var(--accent);border:1px solid #2a6060;border-radius:8px;padding:9px;font-size:12px;cursor:pointer}
+.btn-del-unit{background:none;border:1px solid #603030;color:#c06060;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer}
+.msg{font-size:12px;color:#4aca4a;text-align:center;min-height:18px}
+.preview-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;align-self:flex-start}
+#canvas{max-width:100%;border-radius:10px;border:1px solid var(--border);display:block}
+.btn-row{display:flex;gap:4px}
+.btn-mv{background:none;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:1px 5px;cursor:pointer;font-size:11px}
+.unit-row{display:flex;align-items:flex-end;gap:6px}
+.unit-row>div:first-child{flex:1}
+#page-footer{background:#081018;border-top:1px solid #2a4040;text-align:center;padding:14px 20px;color:#60a0a0;font-size:11px;line-height:1.9}
+#page-footer strong{color:var(--accent)}
 </style>
 </head>
 <body>
 <div class="layout">
-
-<!-- ── SIDEBAR ── -->
 <div id="sidebar">
   <h1>&#128203; Gerador de Relatório SEMSAU</h1>
-
   <div><div class="tabs" id="tabBar"></div></div>
-
   <div class="card">
     <div class="unit-row">
-      <div>
-        <label>Unidade de Saúde</label>
-        <input type="text" id="unidade" oninput="saveAndDraw()">
-      </div>
+      <div><label>Unidade de Saúde</label><input type="text" id="unidade" oninput="saveAndDraw()"></div>
       <button class="btn-del-unit" onclick="deleteUnit()">&#x2715;</button>
     </div>
     <label>Município</label>
     <input type="text" id="cidade" oninput="saveAndDraw()">
-
-    <!-- Calendário de período -->
-    <label>Período — Data inicial e final</label>
+    <label>Período</label>
     <div class="date-row">
-      <div>
-        <label>De</label>
-        <input type="date" id="dataInicio" onchange="buildPeriodo()">
-      </div>
-      <div>
-        <label>Até</label>
-        <input type="date" id="dataFim" onchange="buildPeriodo()">
-      </div>
+      <div><label>De</label><input type="date" id="dataInicio" onchange="buildPeriodo()"></div>
+      <div><label>Até</label><input type="date" id="dataFim" onchange="buildPeriodo()"></div>
     </div>
     <div class="periodo-preview" id="periodoPreview">—</div>
-    <!-- Campo oculto que guarda o texto do período -->
     <input type="hidden" id="periodo">
   </div>
-
-
-
-  <!-- Importar planilha -->
   <div class="import-box">
     <div class="import-title">Importar planilha (.xlsx / .csv)</div>
     <div class="import-hint">Colunas: <strong>Nome</strong> | <strong>Especialidade</strong> | <strong>Atendimentos</strong></div>
     <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
   </div>
-
-  <!-- Profissionais -->
   <div class="card">
     <div class="prof-header">
       <span class="prof-title" id="profCount">Profissionais</span>
@@ -144,7 +99,6 @@ input[type=file] { color: var(--muted); font-size: 12px; width: 100%; }
       <div class="total-label">atendimentos</div>
     </div>
   </div>
-
   <div class="export-row">
     <button class="btn-export" onclick="exportPNG('normal')">&#11015; PNG Post</button>
     <button class="btn-export insta" onclick="exportPNG('insta')">&#11015; Instagram<br><small style="font-weight:normal;font-size:10px">1080×1080</small></button>
@@ -152,15 +106,11 @@ input[type=file] { color: var(--muted); font-size: 12px; width: 100%; }
   <button class="btn-csv" onclick="downloadCSV()">&#11015; Baixar modelo CSV</button>
   <div class="msg" id="msg"></div>
 </div>
-
-<!-- ── PREVIEW ── -->
 <div id="preview">
   <div class="preview-title">Preview ao vivo</div>
   <canvas id="canvas"></canvas>
 </div>
 </div>
-
-<!-- ── RODAPÉ ── -->
 <footer id="page-footer">
   <strong>SEMSAU</strong> — Secretaria Municipal de Saúde<br>
   Desenvolvido por <strong>Ewerson Luiz de Oliveira</strong> · Gestor em Tecnologia da Informação<br>
@@ -169,80 +119,43 @@ input[type=file] { color: var(--muted); font-size: 12px; width: 100%; }
 </footer>
 
 <script>
-// ── Meses em PT ───────────────────────────────────────────────
 var MESES=["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
 
 function buildPeriodo(){
   var di=document.getElementById("dataInicio").value;
   var df=document.getElementById("dataFim").value;
   var text="";
-  if(di && df){
-    var d1=new Date(di+"T00:00:00"), d2=new Date(df+"T00:00:00");
-    var dd1=d1.getDate(), dd2=d2.getDate();
-    var mm1=d1.getMonth(), mm2=d2.getMonth();
-    var yy1=d1.getFullYear(), yy2=d2.getFullYear();
-    var s1=String(dd1).padStart(2,"0"), s2=String(dd2).padStart(2,"0");
-    if(dd1===dd2 && mm1===mm2 && yy1===yy2){
-      // Mesmo dia
-      text=s1+" DE "+MESES[mm1]+" DE "+yy1;
-    } else if(mm1===mm2 && yy1===yy2){
-      // Mesmo mês — intervalo com "À"
-      text=s1+" À "+s2+" DE "+MESES[mm1]+" DE "+yy1;
-    } else if(yy1===yy2){
-      // Meses diferentes, mesmo ano
-      text=s1+" DE "+MESES[mm1]+" À "+s2+" DE "+MESES[mm2]+" DE "+yy1;
-    } else {
-      // Anos diferentes
-      text=s1+"/"+String(mm1+1).padStart(2,"0")+"/"+yy1+" À "+s2+"/"+String(mm2+1).padStart(2,"0")+"/"+yy2;
-    }
+  if(di&&df){
+    var d1=new Date(di+"T00:00:00"),d2=new Date(df+"T00:00:00");
+    var s1=String(d1.getDate()).padStart(2,"0"),s2=String(d2.getDate()).padStart(2,"0");
+    var m1=d1.getMonth(),m2=d2.getMonth(),y1=d1.getFullYear(),y2=d2.getFullYear();
+    if(d1.getDate()===d2.getDate()&&m1===m2&&y1===y2) text=s1+" DE "+MESES[m1]+" DE "+y1;
+    else if(m1===m2&&y1===y2) text=s1+" À "+s2+" DE "+MESES[m1]+" DE "+y1;
+    else if(y1===y2) text=s1+" DE "+MESES[m1]+" À "+s2+" DE "+MESES[m2]+" DE "+y1;
+    else text=s1+"/"+String(m1+1).padStart(2,"0")+"/"+y1+" À "+s2+"/"+String(m2+1).padStart(2,"0")+"/"+y2;
   } else if(di){
     var d1=new Date(di+"T00:00:00");
-    text=d1.getDate()+" DE "+MESES[d1.getMonth()]+" DE "+d1.getFullYear();
+    text=String(d1.getDate()).padStart(2,"0")+" DE "+MESES[d1.getMonth()]+" DE "+d1.getFullYear();
   }
   document.getElementById("periodo").value=text;
   document.getElementById("periodoPreview").textContent=text||"—";
   saveAndDraw();
 }
 
-// ── Logos automáticos ─────────────────────────────────────────
-var imgSemsau=new Image(), imgPref=new Image(), imgMid=new Image();
-imgSemsau.crossOrigin="anonymous"; imgPref.crossOrigin="anonymous"; imgMid.crossOrigin="anonymous";
-var logoSemsauOk=false, logoPrefOk=false, logoMidOk=false;
+// Logos
+var imgSemsau=new Image(),imgPref=new Image(),imgMid=new Image();
+imgSemsau.crossOrigin="anonymous";imgPref.crossOrigin="anonymous";imgMid.crossOrigin="anonymous";
+var logoSemsauOk=false,logoPrefOk=false,logoMidOk=false;
 function loadLogos(){
-  // base URL — garante barra no final
   var href=window.location.href;
-  var base=href.endsWith("/")?href:href.replace(/\/[^/]*$/,"/");
-  var ts="?v="+Date.now(); // cache-bust
-
-  // crossOrigin DEVE ser definido antes do src
-  imgSemsau.crossOrigin="anonymous";
-  imgSemsau.onload=function(){logoSemsauOk=true;draw();};
-  imgSemsau.onerror=function(){
-    // Tenta sem crossOrigin como fallback (perde exportação mas mostra preview)
-    var img2=new Image();
-    img2.onload=function(){imgSemsau=img2;logoSemsauOk=true;draw();};
-    img2.src=base+"semsau.png"+ts;
-  };
-  imgSemsau.src=base+"semsau.png"+ts;
-
-  imgPref.crossOrigin="anonymous";
-  imgPref.onload=function(){logoPrefOk=true;draw();};
-  imgPref.onerror=function(){
-    var img2=new Image();
-    img2.onload=function(){imgPref=img2;logoPrefOk=true;draw();};
-    img2.src=base+"gestao.png"+ts;
-  };
-  imgPref.src=base+"gestao.png"+ts;
-
-  imgMid.crossOrigin="anonymous";
-  imgMid.onload=function(){logoMidOk=true;draw();};
-  imgMid.onerror=function(){logoMidOk=false;};
-  imgMid.src=base+"semsau02.png"+ts;
+  var base=href.endsWith("/")?href:href.replace(/\/[^\/]*$/,"/");
+  var ts="?v="+Date.now();
+  imgSemsau.onload=function(){logoSemsauOk=true;draw()};imgSemsau.onerror=function(){logoSemsauOk=false};imgSemsau.src=base+"semsau.png"+ts;
+  imgPref.onload=function(){logoPrefOk=true;draw()};imgPref.onerror=function(){logoPrefOk=false};imgPref.src=base+"gestao.png"+ts;
+  imgMid.onload=function(){logoMidOk=true;draw()};imgMid.onerror=function(){logoMidOk=false};imgMid.src=base+"semsau02.png"+ts;
 }
 
-
-
-// ── Dados padrão ──────────────────────────────────────────────
+// Dados padrão
 var DEFAULT_UNITS=[
   {id:"ubs",nome:"UBS ANTONIO DE CARVALHO",periodo:"",dataInicio:"",dataFim:"",cidade:"Costa Marques - RO",profs:[
     {nome:"Dr. Alexandre",esp:"Clínico Geral",qtd:17},
@@ -267,15 +180,15 @@ var DEFAULT_UNITS=[
   ]}
 ];
 
-var units=[], activeIdx=0;
+var units=[],activeIdx=0;
 function loadState(){
-  try{var s=localStorage.getItem("semsau_units");units=s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULT_UNITS));}
-  catch(e){units=JSON.parse(JSON.stringify(DEFAULT_UNITS));}
-  try{var ai=parseInt(localStorage.getItem("semsau_active")||"0");activeIdx=ai<units.length?ai:0;}
-  catch(e){activeIdx=0;}
+  try{var s=localStorage.getItem("semsau_units_v5");units=s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULT_UNITS))}
+  catch(e){units=JSON.parse(JSON.stringify(DEFAULT_UNITS))}
+  try{var ai=parseInt(localStorage.getItem("semsau_active_v5")||"0");activeIdx=ai<units.length?ai:0}
+  catch(e){activeIdx=0}
 }
 function saveState(){
-  try{localStorage.setItem("semsau_units",JSON.stringify(units));localStorage.setItem("semsau_active",String(activeIdx));}catch(e){}
+  try{localStorage.setItem("semsau_units_v5",JSON.stringify(units));localStorage.setItem("semsau_active_v5",String(activeIdx))}catch(e){}
 }
 function saveAndDraw(){
   if(!units[activeIdx])return;
@@ -287,14 +200,13 @@ function saveAndDraw(){
   saveState();draw();
 }
 
-// ── Abas ──────────────────────────────────────────────────────
 function renderTabs(){
   var bar=document.getElementById("tabBar");bar.innerHTML="";
   units.forEach(function(u,i){
     var t=document.createElement("button");
     t.className="tab"+(i===activeIdx?" active":"");
     t.textContent=u.nome.length>18?u.nome.substring(0,18)+"…":u.nome;
-    t.onclick=(function(idx){return function(){activeIdx=idx;saveState();renderAll();};})(i);
+    t.onclick=(function(idx){return function(){activeIdx=idx;saveState();renderAll()}})(i);
     bar.appendChild(t);
   });
   var a=document.createElement("button");a.className="tab-add";a.textContent="+ Unidade";a.onclick=addUnit;bar.appendChild(a);
@@ -305,12 +217,11 @@ function addUnit(){
   activeIdx=units.length-1;saveState();renderAll();
 }
 function deleteUnit(){
-  if(units.length<=1){showMsg("Precisa ter ao menos uma unidade.");return;}
+  if(units.length<=1){showMsg("Precisa ter ao menos uma unidade.");return}
   if(!confirm("Excluir \""+units[activeIdx].nome+"\"?"))return;
   units.splice(activeIdx,1);activeIdx=Math.min(activeIdx,units.length-1);saveState();renderAll();
 }
 
-// ── Lista profissionais ───────────────────────────────────────
 function renderList(){
   var u=units[activeIdx];if(!u)return;
   document.getElementById("unidade").value=u.nome||"";
@@ -322,10 +233,9 @@ function renderList(){
   var list=document.getElementById("profList");list.innerHTML="";
   u.profs.forEach(function(p,i){
     var d=document.createElement("div");d.className="prof-item";
-    d.innerHTML=
-      '<div class="prof-item-header"><div class="btn-row">'+
-      '<button class="btn-mv" onclick="mv('+i+',-1)"'+(i===0?' disabled':'')+'>&#8593;</button>'+
-      '<button class="btn-mv" onclick="mv('+i+',1)"'+(i===u.profs.length-1?' disabled':'')+'>&#8595;</button>'+
+    d.innerHTML='<div class="prof-item-header"><div class="btn-row">'+
+      '<button class="btn-mv" onclick="mv('+i+',-1)"'+(i===0?" disabled":"")+'>&#8593;</button>'+
+      '<button class="btn-mv" onclick="mv('+i+',1)"'+(i===u.profs.length-1?" disabled":"")+'>&#8595;</button>'+
       '<span class="prof-num">#'+(i+1)+'</span></div>'+
       '<button class="btn-del" onclick="removeProf('+i+')">&#x2715;</button></div>'+
       '<input type="text" value="'+esc(p.nome)+'" placeholder="Nome" oninput="setProf('+i+',\'nome\',this.value)">'+
@@ -336,371 +246,252 @@ function renderList(){
   document.getElementById("profCount").textContent="Profissionais ("+u.profs.length+")";
   updateTotal();
 }
-function esc(s){return String(s||"").replace(/"/g,"&quot;");}
-function setProf(i,f,v){units[activeIdx].profs[i][f]=v;updateTotal();saveState();draw();}
-function updateTotal(){var t=(units[activeIdx].profs||[]).reduce(function(s,p){return s+(parseInt(p.qtd)||0);},0);document.getElementById("totalNum").textContent=t;}
-function addProf(){units[activeIdx].profs.push({nome:"Novo Profissional",esp:"Especialidade",qtd:0});saveState();renderList();draw();}
-function removeProf(i){units[activeIdx].profs.splice(i,1);saveState();renderList();draw();}
-function mv(i,dir){var p=units[activeIdx].profs,j=i+dir;if(j<0||j>=p.length)return;var t=p[i];p[i]=p[j];p[j]=t;saveState();renderList();draw();}
-function renderAll(){renderTabs();renderList();draw();}
+function esc(s){return String(s||"").replace(/"/g,"&quot;")}
+function setProf(i,f,v){units[activeIdx].profs[i][f]=v;updateTotal();saveState();draw()}
+function updateTotal(){var t=(units[activeIdx].profs||[]).reduce(function(s,p){return s+(parseInt(p.qtd)||0)},0);document.getElementById("totalNum").textContent=t}
+function addProf(){units[activeIdx].profs.push({nome:"Novo Profissional",esp:"Especialidade",qtd:0});saveState();renderList();draw()}
+function removeProf(i){units[activeIdx].profs.splice(i,1);saveState();renderList();draw()}
+function mv(i,dir){var p=units[activeIdx].profs,j=i+dir;if(j<0||j>=p.length)return;var t=p[i];p[i]=p[j];p[j]=t;saveState();renderList();draw()}
+function renderAll(){renderTabs();renderList();draw()}
+function showMsg(m){var el=document.getElementById("msg");el.textContent=m;setTimeout(function(){el.textContent=""},3500)}
 
-// ── Importar planilha ─────────────────────────────────────────
+// ── IMPORTAR ─────────────────────────────────────────────────
 document.getElementById("fileInput").addEventListener("change",function(e){
-  var f=e.target.files[0];if(!f)return;
+  var f=e.target.files[0];
+  if(!f){return}
+  var isCSV=f.name.toLowerCase().endsWith(".csv");
   var reader=new FileReader();
-  if(f.name.toLowerCase().endsWith(".csv")){
-    reader.onload=function(ev){
-      try{
-        var raw=ev.target.result;
-        var allLines=raw.split(/
-|
-|
-/);
-        var metaUnidade="",metaPeriodo="",metaInicio="",metaFim="";
-        allLines.forEach(function(l){
-          if(l.indexOf("#UNIDADE,")===0)    metaUnidade=l.substring(9).trim();
-          if(l.indexOf("#PERIODO,")===0)    metaPeriodo=l.substring(9).trim();
-          if(l.indexOf("#DATA_INICIO,")===0)metaInicio=l.substring(13).trim();
-          if(l.indexOf("#DATA_FIM,")===0)   metaFim=l.substring(10).trim();
-        });
-        var dataLines=allLines.filter(function(l){
-          var t=l.trim();
-          return t.length>0 && t[0]!="#" && t.toLowerCase().indexOf("nome")!==0;
-        });
-        if(!dataLines.length){showMsg("CSV sem dados");return;}
-        var sep=dataLines[0].indexOf(";")!==-1?";":","
-        var parsed=[];
-        dataLines.forEach(function(l){
-          var p=l.split(sep);
-          var n=(p[0]||"").trim();
-          if(n) parsed.push({nome:n,esp:(p[1]||"").trim(),qtd:parseInt(p[2])||0});
-        });
-        if(!parsed.length){showMsg("Nenhum registro encontrado no CSV");return;}
-        if(metaUnidade){
-          var found=-1;
-          for(var i=0;i<units.length;i++){
-            if(units[i].nome.toUpperCase()===metaUnidade.toUpperCase()){found=i;break;}
+
+  reader.onload=function(ev){
+    try{
+      var profs=[],metaUnidade="",metaPeriodo="",metaInicio="",metaFim="";
+
+      if(isCSV){
+        var lines=ev.target.result.split("\n");
+        lines.forEach(function(l){
+          l=l.replace(/\r$/,"");
+          if(l.indexOf("#UNIDADE,")===0)     metaUnidade=l.slice(9).trim();
+          else if(l.indexOf("#PERIODO,")===0) metaPeriodo=l.slice(9).trim();
+          else if(l.indexOf("#DATA_INICIO,")===0) metaInicio=l.slice(13).trim();
+          else if(l.indexOf("#DATA_FIM,")===0)    metaFim=l.slice(10).trim();
+          else if(l.trim()&&l.toLowerCase().indexOf("nome")!==0&&l[0]!=="#"){
+            var sep=l.indexOf(";")!==-1?";":","
+            var p=l.split(sep);
+            var n=(p[0]||"").trim();
+            if(n) profs.push({nome:n,esp:(p[1]||"").trim(),qtd:parseInt(p[2])||0});
           }
-          if(found===-1){
-            units.push({id:"u"+Date.now(),nome:metaUnidade.toUpperCase(),periodo:metaPeriodo,dataInicio:metaInicio,dataFim:metaFim,cidade:"Costa Marques - RO",profs:parsed});
-            activeIdx=units.length-1;
-          }else{
-            activeIdx=found;
-            units[activeIdx].profs=parsed;
-            if(metaPeriodo)units[activeIdx].periodo=metaPeriodo;
-            if(metaInicio) units[activeIdx].dataInicio=metaInicio;
-            if(metaFim)    units[activeIdx].dataFim=metaFim;
-          }
-        }else{
-          units[activeIdx].profs=parsed;
-        }
-        saveState();
-        renderAll();
-        showMsg(parsed.length+" profissionais importados"+(metaUnidade?" → "+metaUnidade:""));
-      }catch(err){
-        showMsg("Erro ao ler CSV: "+err.message);
-      }
-    };
-    reader.readAsText(f,"UTF-8");
-  }else{
-    reader.onload=function(ev){
-      try{
+        });
+      } else {
         var wb=XLSX.read(ev.target.result,{type:"binary"});
-        var ws=wb.Sheets[wb.SheetNames[0]];
-        var rows=XLSX.utils.sheet_to_json(ws,{header:1});
-        var parsed=rows.slice(1).filter(function(r){return r[0];}).map(function(r){
-          return{nome:String(r[0]||""),esp:String(r[1]||""),qtd:parseInt(r[2])||0};
+        var rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+        rows.slice(1).forEach(function(r){
+          if(r[0]) profs.push({nome:String(r[0]).trim(),esp:String(r[1]||"").trim(),qtd:parseInt(r[2])||0});
         });
-        if(parsed.length){units[activeIdx].profs=parsed;saveState();renderList();draw();showMsg(parsed.length+" registros importados");}
-        else{showMsg("Planilha vazia ou sem dados na linha 2+");}
-      }catch(err){showMsg("Erro: "+err.message);}
-    };reader.readAsBinaryString(f);
-  }e.target.value="";
+      }
+
+      if(!profs.length){showMsg("Nenhum dado encontrado no arquivo");return}
+
+      if(metaUnidade){
+        var found=-1;
+        for(var i=0;i<units.length;i++){
+          if(units[i].nome.toUpperCase()===metaUnidade.toUpperCase()){found=i;break}
+        }
+        if(found===-1){
+          units.push({id:"u"+Date.now(),nome:metaUnidade.toUpperCase(),periodo:metaPeriodo,dataInicio:metaInicio,dataFim:metaFim,cidade:"Costa Marques - RO",profs:profs});
+          activeIdx=units.length-1;
+        } else {
+          activeIdx=found;
+          units[activeIdx].profs=profs;
+          if(metaPeriodo) units[activeIdx].periodo=metaPeriodo;
+          if(metaInicio)  units[activeIdx].dataInicio=metaInicio;
+          if(metaFim)     units[activeIdx].dataFim=metaFim;
+        }
+      } else {
+        units[activeIdx].profs=profs;
+      }
+
+      saveState();renderAll();
+      showMsg(profs.length+" profissionais importados"+(metaUnidade?" → "+metaUnidade:""));
+    } catch(err){
+      showMsg("Erro: "+err.message);
+    }
+  };
+
+  if(isCSV) reader.readAsText(f,"UTF-8");
+  else reader.readAsBinaryString(f);
+  e.target.value="";
 });
 
 function downloadCSV(){
-  var rows=["Nome,Especialidade,Atendimentos","Dr. Alexandre,Clínico Geral,17","Dra. Natália e Jefferson Miranda,Passe Livre / Ação Mobilidade e Serviço Social,75","Dr. Pagoto,Programa Emagreça São Francisco,13","Daniele Piveta,Nutricionista,6","Érica Batista,Atendimento Ambulatorial,144","Jean,Fonoaudiólogo,8","Atendimento com Psicólogos,Psicologia,33","Dra. Raphaella Krisley,Ginecologista,33"];
-  var blob=new Blob([rows.join("\n")],{type:"text/csv;charset=utf-8;"});
-  var link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download="modelo-importacao-semsau.csv";link.click();showMsg("Modelo CSV baixado!");
+  var rows=["Nome,Especialidade,Atendimentos","Dr. Alexandre,Clínico Geral,17","Érica Batista,Atendimento Ambulatorial,144","Jean,Fonoaudiólogo,8"];
+  var blob=new Blob([rows.join("\n")],{type:"text/csv;charset=utf-8"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="modelo-importacao-semsau.csv";a.click();
+  showMsg("Modelo CSV baixado!");
 }
-function showMsg(m){var el=document.getElementById("msg");el.textContent=m;setTimeout(function(){el.textContent="";},3000);}
 
-// ── Canvas helpers ────────────────────────────────────────────
-function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-function trunc(ctx,text,maxW){if(ctx.measureText(text).width<=maxW)return text;var t=text;while(t.length>0&&ctx.measureText(t+"…").width>maxW)t=t.slice(0,-1);return t+"…";}
+// ── CANVAS ────────────────────────────────────────────────────
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function trunc(ctx,t,mW){if(ctx.measureText(t).width<=mW)return t;while(t.length>0&&ctx.measureText(t+"…").width>mW)t=t.slice(0,-1);return t+"…"}
 
-// ── Desenhar cartaz ───────────────────────────────────────────
 function drawPoster(ctx,W,profs,unidade,periodo){
   var sc=W/800;
-  var HEADER_H=200*sc;
-  var ROW_H=58*sc;
-  var ROWS_H=profs.length*ROW_H;
-  var TOTAL_AREA=190*sc;
-  var FOOTER_H=100*sc;
+  var HEADER_H=200*sc,ROW_H=58*sc,ROWS_H=profs.length*ROW_H,TOTAL_AREA=190*sc,FOOTER_H=115*sc;
   var H=HEADER_H+TOTAL_AREA+ROWS_H+FOOTER_H;
-  ctx.canvas.width=W; ctx.canvas.height=H;
-  var cx=W/2;
-  var total=profs.reduce(function(s,p){return s+(parseInt(p.qtd)||0);},0);
+  ctx.canvas.width=W;ctx.canvas.height=H;
+  var cx=W/2,total=profs.reduce(function(s,p){return s+(parseInt(p.qtd)||0)},0);
 
-  // ── FUNDO GRADIENTE DIAGONAL ────────────────────────────────
-  // Gradiente nas cores oficiais da SEMSAU Costa Marques
+  // Fundo gradiente diagonal
   var dg=ctx.createLinearGradient(0,0,W,H);
-  dg.addColorStop(0,"#1a3a6a");   // azul-marinho institucional
-  dg.addColorStop(0.45,"#0f2d5a"); // azul royal escuro
-  dg.addColorStop(1,"#071828");   // azul muito escuro
-  ctx.fillStyle=dg; ctx.fillRect(0,0,W,H);
+  dg.addColorStop(0,"#1a3a6a");dg.addColorStop(0.4,"#0f2d5a");dg.addColorStop(1,"#071828");
+  ctx.fillStyle=dg;ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle="rgba(74,188,188,0.06)";ctx.lineWidth=1*sc;
+  for(var d=-H;d<W+H;d+=48*sc){ctx.beginPath();ctx.moveTo(d,0);ctx.lineTo(d+H*0.8,H);ctx.stroke()}
 
-  // Linhas diagonais decorativas
-  ctx.strokeStyle="rgba(74,188,188,0.06)"; ctx.lineWidth=1*sc;
-  for(var d=-H;d<W+H;d+=35*sc){
-    ctx.beginPath();ctx.moveTo(d,0);ctx.lineTo(d+H,H);ctx.stroke();
-  }
-
-  // ── TOPO: TÍTULO + UNIDADE ──────────────────────────────────
-  ctx.fillStyle="rgba(43,91,168,0.20)"; // azul SEMSAU oficial
-  ctx.fillRect(0,0,W,HEADER_H);
-
-  // Título
-  ctx.fillStyle="#4acaca";
-  ctx.font="bold "+(36*sc)+"px Arial Black,Arial,sans-serif";
-  ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.fillText("RELATÓRIO DE ATENDIMENTOS",cx,42*sc);
-
-  // Linha dourada decorativa
-  var lg=ctx.createLinearGradient(40*sc,0,(W-40*sc),0);
-  lg.addColorStop(0,"rgba(232,160,16,0)"); lg.addColorStop(0.5,"#e8a010"); lg.addColorStop(1,"rgba(232,160,16,0)");
-  ctx.fillStyle=lg; ctx.fillRect(40*sc,66*sc,(W-80*sc),2*sc);
-
+  // Header
+  ctx.fillStyle="rgba(43,91,168,0.20)";ctx.fillRect(0,0,W,HEADER_H);
+  ctx.shadowColor="#4acaca";ctx.shadowBlur=22*sc;
+  ctx.fillStyle="#4acaca";ctx.font="bold "+(40*sc)+"px Arial Black,Arial,sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("RELATÓRIO DE ATENDIMENTOS",cx,50*sc);
+  ctx.shadowBlur=0;ctx.shadowColor="transparent";
+  var lg=ctx.createLinearGradient(30*sc,0,W-30*sc,0);
+  lg.addColorStop(0,"rgba(232,160,16,0)");lg.addColorStop(.5,"#e8a010");lg.addColorStop(1,"rgba(232,160,16,0)");
+  ctx.fillStyle=lg;ctx.fillRect(30*sc,74*sc,W-60*sc,3*sc);
   // Caixa unidade
-  ctx.fillStyle="rgba(10,30,50,0.7)";
-  rr(ctx,36*sc,76*sc,W-72*sc,50*sc,10*sc); ctx.fill();
-  ctx.strokeStyle="rgba(74,188,188,0.55)"; ctx.lineWidth=1.5*sc;
-  rr(ctx,36*sc,76*sc,W-72*sc,50*sc,10*sc); ctx.stroke();
-  ctx.fillStyle="#ffffff";
-  ctx.font="bold "+(22*sc)+"px Arial,sans-serif";
-  ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.fillText(unidade,cx,101*sc);
+  ctx.fillStyle="rgba(12,30,50,0.78)";rr(ctx,32*sc,82*sc,W-64*sc,52*sc,12*sc);ctx.fill();
+  ctx.shadowColor="#4acaca";ctx.shadowBlur=10*sc;ctx.strokeStyle="#4acaca";ctx.lineWidth=2*sc;
+  rr(ctx,32*sc,82*sc,W-64*sc,52*sc,12*sc);ctx.stroke();ctx.shadowBlur=0;
+  ctx.fillStyle="#fff";ctx.font="bold "+(23*sc)+"px Arial,sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(unidade,cx,108*sc);
+  // Período
+  ctx.fillStyle="rgba(160,240,240,0.8)";ctx.font="bold "+(11*sc)+"px Arial,sans-serif";ctx.fillText("PERÍODO",cx,146*sc);
+  ctx.strokeStyle="rgba(74,202,202,0.25)";ctx.lineWidth=1*sc;ctx.setLineDash([3*sc,4*sc]);
+  ctx.beginPath();ctx.moveTo(cx-55*sc,154*sc);ctx.lineTo(cx+55*sc,154*sc);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle="#e8a010";ctx.font="bold "+(27*sc)+"px Arial Black,Arial,sans-serif";ctx.fillText(periodo||"",cx,176*sc);
 
-  // Label PERÍODO centralizado
-  ctx.fillStyle="rgba(74,202,202,0.75)";
-  ctx.font="bold "+(11*sc)+"px Arial,sans-serif";
-  ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.letterSpacing="4px";
-  ctx.fillText("PERÍODO",cx,138*sc);
+  // Total gigante
+  var totCY=HEADER_H+TOTAL_AREA/2,totR=90*sc;
+  ctx.shadowColor="rgba(255,255,255,0.55)";ctx.shadowBlur=35*sc;
+  ctx.fillStyle="#fff";ctx.font="bold "+(112*sc)+"px Arial Black,Arial,sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(total),cx,totCY-6*sc);
+  ctx.shadowColor="rgba(232,160,16,0.9)";ctx.shadowBlur=22*sc;ctx.fillStyle="#e8a010";ctx.fillText(String(total),cx,totCY-6*sc);
+  ctx.shadowBlur=0;ctx.fillStyle="#fff";ctx.fillText(String(total),cx,totCY-6*sc);
+  ctx.fillStyle="rgba(255,255,255,0.85)";ctx.font="bold "+(15*sc)+"px Arial,sans-serif";ctx.fillText("ATENDIMENTOS REALIZADOS",cx,totCY+totR-10*sc);
 
-  // Linha pontilhada abaixo do label
-  ctx.strokeStyle="rgba(74,202,202,0.3)"; ctx.lineWidth=1*sc;
-  ctx.setLineDash([3*sc,4*sc]);
-  ctx.beginPath();ctx.moveTo(cx-60*sc,145*sc);ctx.lineTo(cx+60*sc,145*sc);ctx.stroke();
-  ctx.setLineDash([]);
+  // Linhas separadoras
+  ctx.fillStyle=lg;ctx.fillRect(40*sc,HEADER_H-3*sc,W-80*sc,2*sc);
+  ctx.fillStyle=lg;ctx.fillRect(40*sc,HEADER_H+TOTAL_AREA-3*sc,W-80*sc,2*sc);
 
-  // Data do período
-  ctx.fillStyle="#e8a010";
-  ctx.font="bold "+(28*sc)+"px Arial Black,Arial,sans-serif";
-  ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.fillText(periodo||"",cx,164*sc);
-
-  // Linha separadora
-  ctx.fillStyle=lg; ctx.fillRect(40*sc,(HEADER_H-4*sc),(W-80*sc),2*sc);
-
-  // ── NÚMERO TOTAL GIGANTE — ÂNCORA CENTRAL ───────────────────
-  var totCY=HEADER_H+TOTAL_AREA/2;
-
-  // Número total — glow dourado + sombra branca para máximo destaque
-  ctx.font="bold "+(110*sc)+"px Arial Black,Arial,sans-serif";
-  ctx.textAlign="center"; ctx.textBaseline="middle";
-
-  // Camada 1: sombra branca externa (destaque)
-  ctx.shadowColor="rgba(255,255,255,0.55)";
-  ctx.shadowBlur=40*sc;
-  ctx.shadowOffsetX=0; ctx.shadowOffsetY=0;
-  ctx.fillStyle="#e8a010";
-  ctx.fillText(String(total),cx,totCY-6*sc);
-
-  // Camada 2: glow dourado intenso (identidade)
-  ctx.shadowColor="rgba(232,160,16,0.8)";
-  ctx.shadowBlur=25*sc;
-  ctx.fillText(String(total),cx,totCY-6*sc);
-
-  // Camada 3: passada final limpa sem sombra
-  ctx.shadowBlur=0; ctx.shadowColor="transparent"; ctx.shadowOffsetY=0;
-  ctx.fillText(String(total),cx,totCY-6*sc);
-
-  // Label "ATENDIMENTOS REALIZADOS" com sombra branca leve
-  ctx.shadowColor="rgba(255,255,255,0.3)";
-  ctx.shadowBlur=8*sc;
-  ctx.fillStyle="rgba(255,255,255,0.85)";
-  ctx.font="bold "+(16*sc)+"px Arial,sans-serif";
-  ctx.textAlign="center"; ctx.textBaseline="top";
-  ctx.fillText("ATENDIMENTOS REALIZADOS",cx,totCY+52*sc);
-  ctx.shadowBlur=0; ctx.shadowColor="transparent";
-
-  // Separador dourado antes das linhas
-  ctx.fillStyle=lg; ctx.fillRect(40*sc,HEADER_H+TOTAL_AREA-6*sc,(W-80*sc),2*sc);
-
-  // ── LISTA DE PROFISSIONAIS ───────────────────────────────────
+  // Marca dagua
   var rowY=HEADER_H+TOTAL_AREA;
-
-  // ── MARCA DAGUA: logo centralizada atras das linhas ──────────
-  if(logoMidOk && imgMid.naturalWidth){
-    var mH=ROWS_H*0.70;
-    var mRatio=imgMid.naturalWidth/imgMid.naturalHeight;
-    var mW=mH*mRatio;
-    ctx.save();
-    ctx.globalAlpha=0.12; // PNG transparente — sem necessidade de screen
-    ctx.drawImage(imgMid, cx-mW/2, rowY+(ROWS_H-mH)/2, mW, mH);
-    ctx.restore();
+  if(logoMidOk&&imgMid.naturalWidth){
+    var mH=ROWS_H*0.70,mR=imgMid.naturalWidth/imgMid.naturalHeight,mW=mH*mR;
+    ctx.save();ctx.globalAlpha=0.10;ctx.drawImage(imgMid,cx-mW/2,rowY+(ROWS_H-mH)/2,mW,mH);ctx.restore();
   }
 
+  // Linhas profissionais
+  var maxQtd=0;profs.forEach(function(p){var q=parseInt(p.qtd)||0;if(q>maxQtd)maxQtd=q});
   profs.forEach(function(p,i){
-    var ry=rowY+i*ROW_H, rh=ROW_H-1*sc;
-
-    // Fundo linha alternado
-    if(i%2===0){ ctx.fillStyle="rgba(74,202,202,0.05)"; ctx.fillRect(0,ry,W,rh+1*sc); }
-
-    // Barra lateral ciano
-    ctx.fillStyle="rgba(74,188,188,0.65)";
-    ctx.fillRect(10*sc,ry+6*sc,3*sc,rh-12*sc);
-
-    // Nome profissional
-    // Layout: nome(52%) | barra(24%) | número(20%)
-    var nmW=W*0.50;          // nome até 50% da largura — cabe nomes longos
-    var numAreaW=W*0.20;     // espaço do número à direita
-    var barX=20*sc+nmW+8*sc; // barra começa após o nome
-    var barW=W-barX-numAreaW; // barra ocupa o meio
-
-    // Nome — com espaço total disponível
-    ctx.fillStyle="#ffffff"; ctx.font="bold "+(15*sc)+"px Arial,sans-serif";
-    ctx.textAlign="left"; ctx.textBaseline="top";
-    ctx.fillText(trunc(ctx,p.nome,nmW-10*sc),20*sc,ry+5*sc);
-
-    // Especialidade
-    ctx.fillStyle="rgba(255,208,106,0.85)"; ctx.font="italic "+(11*sc)+"px Arial,sans-serif";
-    ctx.fillText(trunc(ctx,p.esp,nmW-10*sc),20*sc,ry+23*sc);
-
-    // Número colorido por volume
+    var ry=rowY+i*ROW_H,rh=ROW_H-5*sc,px=28*sc;
+    var rowGrad=ctx.createLinearGradient(px,ry,W-px,ry);
+    rowGrad.addColorStop(0,i%2===0?"rgba(74,202,202,0.07)":"rgba(255,255,255,0.04)");
+    rowGrad.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle=rowGrad;rr(ctx,px,ry+2*sc,W-px*2,rh,8*sc);ctx.fill();
     var qtd=parseInt(p.qtd)||0;
-    var col=qtd>=100?"#5dcaa5":qtd>=50?"#85b7eb":qtd>=20?"#e8a010":"rgba(255,255,255,0.65)";
-
-    // Barra de proporção — no centro, colorida por volume
-    var barH=5*sc;
-    var barY=ry+rh/2-barH/2;
-    var maxQtd=Math.max.apply(null,profs.map(function(pp){return parseInt(pp.qtd)||0;}));
+    var col=qtd>=100?"#5dcaa5":qtd>=50?"#85b7eb":qtd>=20?"#e8a010":"#aaaaaa";
+    ctx.fillStyle=col;ctx.fillRect(px+1,ry+10*sc,4*sc,rh-18*sc);
+    // Nome
+    var nmW=W*0.50;
+    ctx.fillStyle="#fff";ctx.font="bold "+(15*sc)+"px Arial,sans-serif";
+    ctx.textAlign="left";ctx.textBaseline="top";ctx.fillText(trunc(ctx,p.nome,nmW-10*sc),px+14*sc,ry+9*sc);
+    ctx.fillStyle="rgba(255,208,106,0.85)";ctx.font="italic "+(11*sc)+"px Arial,sans-serif";
+    ctx.fillText(trunc(ctx,p.esp,nmW-10*sc),px+14*sc,ry+27*sc);
+    // Barra
+    var numAreaW=W*0.20,barX=px+14*sc+nmW,barW=W-barX-numAreaW,barH=5*sc,barY=ry+rh/2-barH/2;
     var ratio=maxQtd>0?qtd/maxQtd:0;
-
-    // Fundo da barra
-    ctx.fillStyle="rgba(255,255,255,0.07)";
-    rr(ctx,barX,barY,barW,barH,barH/2); ctx.fill();
-
-    // Barra preenchida
+    ctx.fillStyle="rgba(255,255,255,0.07)";rr(ctx,barX,barY,barW,barH,barH/2);ctx.fill();
     if(ratio>0){
-      ctx.fillStyle=col+"99"; // mesma cor do número com transparência
-      rr(ctx,barX,barY,barW*ratio,barH,barH/2); ctx.fill();
+      var bg=ctx.createLinearGradient(barX,0,barX+barW*ratio,0);bg.addColorStop(0,col);bg.addColorStop(1,col+"88");
+      ctx.fillStyle=bg;rr(ctx,barX,barY,barW*ratio,barH,barH/2);ctx.fill();
     }
-
     // Número
-    // Sombra branca no numero para destaque
-    ctx.shadowColor="rgba(255,255,255,0.35)";
-    ctx.shadowBlur=12*sc;
-    ctx.shadowOffsetX=0; ctx.shadowOffsetY=0;
-    ctx.fillStyle=col;
-    ctx.font="bold "+(30*sc)+"px Arial Black,Arial,sans-serif";
-    ctx.textAlign="right"; ctx.textBaseline="middle";
-    ctx.fillText(String(qtd).padStart(2,"0"),W-14*sc,ry+rh/2);
-    ctx.shadowColor="transparent"; ctx.shadowBlur=0;
+    ctx.shadowColor="rgba(255,255,255,0.4)";ctx.shadowBlur=10*sc;
+    ctx.fillStyle=col;ctx.font="bold "+(30*sc)+"px Arial Black,Arial,sans-serif";
+    ctx.textAlign="right";ctx.textBaseline="middle";
+    ctx.fillText(String(qtd).padStart(2,"0"),W-px-10*sc,ry+rh/2+2*sc);ctx.shadowBlur=0;
   });
 
-  // ── RODAPÉ COM ONDA ──────────────────────────────────────────
-  var fy=rowY+ROWS_H;
-  var waveH=20*sc;
-
-  // Gradiente rodapé
-  var fg=ctx.createLinearGradient(0,fy,0,H);
-  fg.addColorStop(0,"#0f2d5a"); fg.addColorStop(1,"#071828"); // cores SEMSAU
+  // Rodapé com onda
+  var fy=rowY+ROWS_H,waveH=22*sc;
+  var fg=ctx.createLinearGradient(0,fy,0,H);fg.addColorStop(0,"#0f2d5a");fg.addColorStop(1,"#071828");
   ctx.fillStyle=fg;
-  ctx.beginPath();
-  ctx.moveTo(0,fy+waveH);
-  ctx.bezierCurveTo(W*0.3,fy-6*sc, W*0.7,fy+waveH*2.2, W,fy+waveH);
-  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
-
-  // Linha brilhante onda
-  ctx.strokeStyle="rgba(74,202,202,0.35)"; ctx.lineWidth=2*sc;
-  ctx.beginPath();
-  ctx.moveTo(0,fy+waveH);
-  ctx.bezierCurveTo(W*0.3,fy-6*sc, W*0.7,fy+waveH*2.2, W,fy+waveH);
-  ctx.stroke();
-
-  var footerMid=fy+waveH+(H-fy-waveH)/2-8*sc;
-
-  // Logos
-  var lh=68*sc, lTop=footerMid-lh/2;
-  if(logoSemsauOk&&imgSemsau.naturalWidth){var rL=imgSemsau.naturalWidth/imgSemsau.naturalHeight;ctx.drawImage(imgSemsau,W*0.14-lh*rL/2,lTop,lh*rL,lh);}
-  if(logoPrefOk&&imgPref.naturalWidth){var rR=imgPref.naturalWidth/imgPref.naturalHeight;ctx.drawImage(imgPref,W*0.86-lh*rR/2,lTop,lh*rR,lh);}
-
-  // Slogan centro
-  ctx.fillStyle="rgba(74,202,202,0.9)"; ctx.font="bold "+(11*sc)+"px Arial,sans-serif";
-  ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.fillText("SEMSAU · COSTA MARQUES - RO",cx,footerMid-8*sc);
-  ctx.fillStyle="#e8a010"; ctx.font="bold "+(10*sc)+"px Arial,sans-serif";
-  ctx.fillText("TRANSPARÊNCIA E RESPONSABILIDADE",cx,footerMid+8*sc);
-
+  ctx.beginPath();ctx.moveTo(0,fy+waveH);
+  ctx.bezierCurveTo(W*.30,fy-8*sc,W*.70,fy+waveH*2.5,W,fy+waveH);
+  ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fill();
+  ctx.shadowColor="#4acaca";ctx.shadowBlur=8*sc;ctx.strokeStyle="rgba(74,202,202,0.45)";ctx.lineWidth=2*sc;
+  ctx.beginPath();ctx.moveTo(0,fy+waveH);ctx.bezierCurveTo(W*.30,fy-8*sc,W*.70,fy+waveH*2.5,W,fy+waveH);ctx.stroke();ctx.shadowBlur=0;
+  var mid=fy+waveH+(H-fy-waveH)/2-8*sc;
+  var lh=68*sc,lt=mid-lh/2;
+  if(logoSemsauOk&&imgSemsau.naturalWidth){var rL=imgSemsau.naturalWidth/imgSemsau.naturalHeight;ctx.drawImage(imgSemsau,W*.14-lh*rL/2,lt,lh*rL,lh)}
+  if(logoPrefOk&&imgPref.naturalWidth){var rR=imgPref.naturalWidth/imgPref.naturalHeight;ctx.drawImage(imgPref,W*.86-lh*rR/2,lt,lh*rR,lh)}
+  var bW=300*sc,bH=42*sc,bX=cx-bW/2,bY=mid-bH/2;
+  ctx.shadowColor="rgba(0,0,0,0.5)";ctx.shadowBlur=12*sc;ctx.shadowOffsetY=3*sc;
+  ctx.fillStyle="#e8a010";rr(ctx,bX,bY,bW,bH,10*sc);ctx.fill();ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+  var sh=ctx.createLinearGradient(bX,bY,bX,bY+bH/2);sh.addColorStop(0,"rgba(255,255,255,0.28)");sh.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=sh;rr(ctx,bX,bY,bW,bH/2,10*sc);ctx.fill();
+  var lt2="TOTAL GERAL:  ",ut="  atendimentos",ts=String(total);
+  ctx.font="bold "+(13*sc)+"px Arial";ctx.textBaseline="middle";ctx.textAlign="left";
+  var lw=ctx.measureText(lt2).width;ctx.font="bold "+(21*sc)+"px Arial Black,Arial";
+  var nw=ctx.measureText(ts).width;ctx.font="bold "+(13*sc)+"px Arial";
+  var uw=ctx.measureText(ut).width,sx=cx-(lw+nw+uw)/2;
+  ctx.fillStyle="#1a1a00";ctx.fillText(lt2,sx,bY+bH/2);
+  ctx.font="bold "+(21*sc)+"px Arial Black,Arial";ctx.fillStyle="#000";ctx.fillText(ts,sx+lw,bY+bH/2);
+  ctx.font="bold "+(13*sc)+"px Arial";ctx.fillStyle="#1a1a00";ctx.fillText(ut,sx+lw+nw,bY+bH/2);
+  ctx.fillStyle="#a0f0f0";ctx.font="bold "+(11*sc)+"px Arial";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText("TRANSPARÊNCIA E RESPONSABILIDADE",cx,bY+bH+14*sc);
   return H;
 }
 
 function draw(){
   var u=units[activeIdx];if(!u)return;
-  var ctx=document.getElementById("canvas").getContext("2d");
-  drawPoster(ctx,800,u.profs,u.nome.toUpperCase(),u.periodo||"");
+  drawPoster(document.getElementById("canvas").getContext("2d"),800,u.profs,u.nome.toUpperCase(),u.periodo||"");
 }
 
-// ── Exportar ─────────────────────────────────────────────────
 function exportPNG(mode){
-  var u=units[activeIdx]; if(!u) return;
+  var u=units[activeIdx];if(!u)return;
   var nome=u.nome.replace(/\s+/g,"-").toLowerCase();
-
-  // Gera dataURL com fallback se canvas estiver contaminado (taint)
-  function getURL(canvas){
-    try{ return canvas.toDataURL("image/png"); }
+  function getURL(c){
+    try{return c.toDataURL("image/png")}
     catch(e){
-      // Remove marca dagua e tenta de novo
-      var prevMid=logoMidOk; logoMidOk=false;
-      var c2=document.createElement("canvas"),ctx2=c2.getContext("2d");
-      drawPoster(ctx2,canvas.width>900?1080:800,u.profs,u.nome.toUpperCase(),u.periodo||"");
-      logoMidOk=prevMid;
-      try{ return c2.toDataURL("image/png"); }
-      catch(e2){ showMsg("Erro ao exportar. Abra pelo GitHub Pages."); return null; }
+      var prev=logoMidOk;logoMidOk=false;
+      var c2=document.createElement("canvas");
+      drawPoster(c2.getContext("2d"),c.width>900?1080:800,u.profs,u.nome.toUpperCase(),u.periodo||"");
+      logoMidOk=prev;
+      try{return c2.toDataURL("image/png")}catch(e2){showMsg("Erro ao exportar");return null}
     }
   }
-
   if(mode==="normal"){
-    var c=document.createElement("canvas"),ctx=c.getContext("2d");
-    drawPoster(ctx,800,u.profs,u.nome.toUpperCase(),u.periodo||"");
-    var url=getURL(c); if(!url) return;
-    var a=document.createElement("a");a.download="relatorio-"+nome+".png";a.href=url;a.click();
-    showMsg("PNG exportado!"); return;
+    var c=document.createElement("canvas");
+    drawPoster(c.getContext("2d"),800,u.profs,u.nome.toUpperCase(),u.periodo||"");
+    var url=getURL(c);if(!url)return;
+    var a=document.createElement("a");a.download="relatorio-"+nome+".png";a.href=url;a.click();showMsg("PNG exportado!");return;
   }
-  // Instagram 1080×1080
-  var sq=document.createElement("canvas"); sq.width=1080; sq.height=1080;
-  var sqCtx=sq.getContext("2d");
-  sqCtx.fillStyle="#0b1f35"; sqCtx.fillRect(0,0,1080,1080);
-  var tmp=document.createElement("canvas"), tmpCtx=tmp.getContext("2d");
-  var pH=drawPoster(tmpCtx,1080,u.profs,u.nome.toUpperCase(),u.periodo||"");
+  var sq=document.createElement("canvas");sq.width=1080;sq.height=1080;
+  var sqCtx=sq.getContext("2d");sqCtx.fillStyle="#071828";sqCtx.fillRect(0,0,1080,1080);
+  var tmp=document.createElement("canvas");
+  var pH=drawPoster(tmp.getContext("2d"),1080,u.profs,u.nome.toUpperCase(),u.periodo||"");
   var sc2=Math.min(1,1080/pH);
   sqCtx.drawImage(tmp,(1080-1080*sc2)/2,(1080-pH*sc2)/2,1080*sc2,pH*sc2);
-  var url=getURL(sq); if(!url) return;
-  var a=document.createElement("a");a.download="relatorio-"+nome+"-instagram.png";a.href=url;a.click();
-  showMsg("Instagram 1080x1080 exportado!");
+  var url=getURL(sq);if(!url)return;
+  var a=document.createElement("a");a.download="relatorio-"+nome+"-instagram.png";a.href=url;a.click();showMsg("Instagram 1080×1080 exportado!");
 }
 
-// ── Init ─────────────────────────────────────────────────────
+// Init
 (function(){
   var now=new Date();
-  var dd=String(now.getDate()).padStart(2,"0"),mm=String(now.getMonth()+1).padStart(2,"0"),yy=now.getFullYear();
-  var hh=String(now.getHours()).padStart(2,"0"),mi=String(now.getMinutes()).padStart(2,"0"),ss=String(now.getSeconds()).padStart(2,"0");
   var el=document.getElementById("footer-date");
-  if(el) el.textContent="Data de acesso: "+dd+"/"+mm+"/"+yy+", "+hh+":"+mi+":"+ss;
+  if(el) el.textContent="Data de acesso: "+String(now.getDate()).padStart(2,"0")+"/"+String(now.getMonth()+1).padStart(2,"0")+"/"+now.getFullYear()+", "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0")+":"+String(now.getSeconds()).padStart(2,"0");
 })();
-loadState(); loadLogos(); renderAll();
+loadState();loadLogos();renderAll();
 </script>
 </body>
 </html>

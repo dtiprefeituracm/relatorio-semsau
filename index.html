@@ -350,16 +350,58 @@ document.getElementById("fileInput").addEventListener("change",function(e){
   var reader=new FileReader();
   if(f.name.toLowerCase().endsWith(".csv")){
     reader.onload=function(ev){
-      var lines=ev.target.result.split(/\r?\n/).slice(1);
-      var parsed=lines.filter(function(l){return l.trim();}).map(function(l){var p=l.split(",");return{nome:(p[0]||"").trim(),esp:(p[1]||"").trim(),qtd:parseInt(p[2])||0};}).filter(function(p){return p.nome;});
-      if(parsed.length){units[activeIdx].profs=parsed;saveState();renderList();draw();showMsg(parsed.length+" registros importados");}
+      try{
+        var allLines=ev.target.result.split(/
+?
+/);
+        var metaUnidade="",metaPeriodo="",metaInicio="",metaFim="";
+        allLines.forEach(function(l){
+          if(l.startsWith("#UNIDADE,"))    metaUnidade=l.split(",").slice(1).join(",").trim();
+          if(l.startsWith("#PERIODO,"))    metaPeriodo=l.split(",").slice(1).join(",").trim();
+          if(l.startsWith("#DATA_INICIO,"))metaInicio=l.split(",").slice(1).join(",").trim();
+          if(l.startsWith("#DATA_FIM,"))   metaFim=l.split(",").slice(1).join(",").trim();
+        });
+        var dataLines=allLines.filter(function(l){
+          return l.trim()&&!l.startsWith("#")&&!l.toLowerCase().startsWith("nome");
+        });
+        var sep=dataLines.length&&dataLines[0].indexOf(";")!==-1?";":","
+        var parsed=dataLines.map(function(l){
+          var p=l.split(sep);
+          return{nome:(p[0]||"").trim(),esp:(p[1]||"").trim(),qtd:parseInt(p[2])||0};
+        }).filter(function(p){return p.nome;});
+        if(!parsed.length){showMsg("CSV vazio ou formato incorreto");return;}
+        if(metaUnidade){
+          var found=-1;
+          units.forEach(function(u,i){if(u.nome.toUpperCase()===metaUnidade.toUpperCase())found=i;});
+          if(found===-1){
+            units.push({id:"u"+Date.now(),nome:metaUnidade.toUpperCase(),periodo:metaPeriodo,dataInicio:metaInicio,dataFim:metaFim,cidade:"Costa Marques - RO",profs:parsed});
+            activeIdx=units.length-1;
+          }else{
+            activeIdx=found;
+            units[activeIdx].profs=parsed;
+            if(metaPeriodo)units[activeIdx].periodo=metaPeriodo;
+            if(metaInicio) units[activeIdx].dataInicio=metaInicio;
+            if(metaFim)    units[activeIdx].dataFim=metaFim;
+          }
+        }else{
+          units[activeIdx].profs=parsed;
+        }
+        saveState();renderAll();
+        showMsg(parsed.length+" profissionais importados"+(metaUnidade?" → "+metaUnidade:""));
+      }catch(e){showMsg("Erro no CSV: "+e.message);}
     };reader.readAsText(f,"UTF-8");
   }else{
     reader.onload=function(ev){
-      try{var wb=XLSX.read(ev.target.result,{type:"binary"});var ws=wb.Sheets[wb.SheetNames[0]];var rows=XLSX.utils.sheet_to_json(ws,{header:1});
-      var parsed=rows.slice(1).filter(function(r){return r[0];}).map(function(r){return{nome:String(r[0]||""),esp:String(r[1]||""),qtd:parseInt(r[2])||0};});
-      if(parsed.length){units[activeIdx].profs=parsed;saveState();renderList();draw();showMsg(parsed.length+" registros importados");}}
-      catch(err){showMsg("Erro ao ler planilha");}
+      try{
+        var wb=XLSX.read(ev.target.result,{type:"binary"});
+        var ws=wb.Sheets[wb.SheetNames[0]];
+        var rows=XLSX.utils.sheet_to_json(ws,{header:1});
+        var parsed=rows.slice(1).filter(function(r){return r[0];}).map(function(r){
+          return{nome:String(r[0]||""),esp:String(r[1]||""),qtd:parseInt(r[2])||0};
+        });
+        if(parsed.length){units[activeIdx].profs=parsed;saveState();renderList();draw();showMsg(parsed.length+" registros importados");}
+        else{showMsg("Planilha vazia ou sem dados na linha 2+");}
+      }catch(err){showMsg("Erro: "+err.message);}
     };reader.readAsBinaryString(f);
   }e.target.value="";
 });
@@ -601,20 +643,41 @@ function draw(){
 
 // ── Exportar ─────────────────────────────────────────────────
 function exportPNG(mode){
-  var u=units[activeIdx];if(!u)return;
+  var u=units[activeIdx]; if(!u) return;
   var nome=u.nome.replace(/\s+/g,"-").toLowerCase();
-  var c=document.createElement("canvas"),ctx=c.getContext("2d");
-  if(mode==="normal"){
-    drawPoster(ctx,800,u.profs,u.nome.toUpperCase(),u.periodo||"");
-    var link=document.createElement("a");link.download="relatorio-"+nome+".png";link.href=c.toDataURL("image/png");link.click();showMsg("PNG exportado!");return;
+
+  // Gera dataURL com fallback se canvas estiver contaminado (taint)
+  function getURL(canvas){
+    try{ return canvas.toDataURL("image/png"); }
+    catch(e){
+      // Remove marca dagua e tenta de novo
+      var prevMid=logoMidOk; logoMidOk=false;
+      var c2=document.createElement("canvas"),ctx2=c2.getContext("2d");
+      drawPoster(ctx2,canvas.width>900?1080:800,u.profs,u.nome.toUpperCase(),u.periodo||"");
+      logoMidOk=prevMid;
+      try{ return c2.toDataURL("image/png"); }
+      catch(e2){ showMsg("Erro ao exportar. Abra pelo GitHub Pages."); return null; }
+    }
   }
-  var sq=document.createElement("canvas");sq.width=1080;sq.height=1080;
-  var sqCtx=sq.getContext("2d");sqCtx.fillStyle="#051418";sqCtx.fillRect(0,0,1080,1080);
-  var tmp=document.createElement("canvas"),tmpCtx=tmp.getContext("2d");
+
+  if(mode==="normal"){
+    var c=document.createElement("canvas"),ctx=c.getContext("2d");
+    drawPoster(ctx,800,u.profs,u.nome.toUpperCase(),u.periodo||"");
+    var url=getURL(c); if(!url) return;
+    var a=document.createElement("a");a.download="relatorio-"+nome+".png";a.href=url;a.click();
+    showMsg("PNG exportado!"); return;
+  }
+  // Instagram 1080×1080
+  var sq=document.createElement("canvas"); sq.width=1080; sq.height=1080;
+  var sqCtx=sq.getContext("2d");
+  sqCtx.fillStyle="#0b1f35"; sqCtx.fillRect(0,0,1080,1080);
+  var tmp=document.createElement("canvas"), tmpCtx=tmp.getContext("2d");
   var pH=drawPoster(tmpCtx,1080,u.profs,u.nome.toUpperCase(),u.periodo||"");
   var sc2=Math.min(1,1080/pH);
   sqCtx.drawImage(tmp,(1080-1080*sc2)/2,(1080-pH*sc2)/2,1080*sc2,pH*sc2);
-  var link=document.createElement("a");link.download="relatorio-"+nome+"-instagram.png";link.href=sq.toDataURL("image/png");link.click();showMsg("Instagram 1080×1080 exportado!");
+  var url=getURL(sq); if(!url) return;
+  var a=document.createElement("a");a.download="relatorio-"+nome+"-instagram.png";a.href=url;a.click();
+  showMsg("Instagram 1080x1080 exportado!");
 }
 
 // ── Init ─────────────────────────────────────────────────────
